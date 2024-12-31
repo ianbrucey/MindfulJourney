@@ -21,6 +21,7 @@ import {
   Volume2,
   Music,
   Wind,
+  MessageSquare,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as Tone from "tone";
@@ -39,6 +40,56 @@ const soundscapes = [
   { id: "minimal", name: "Minimal Piano", type: "music", preset: "ambient" },
 ];
 
+// Productivity prompts and suggestions
+const getSessionPrompts = (elapsed: number, total: number, currentTask: string) => {
+  const progress = elapsed / total;
+
+  if (progress < 0.1) {
+    return [
+      "Take a moment to break down your task into smaller, manageable steps",
+      "Clear your workspace of any distractions",
+      "Set a specific goal for this session",
+    ];
+  } else if (progress < 0.3) {
+    return [
+      "Focus on the most challenging aspect first while your mind is fresh",
+      `How can you approach "${currentTask}" in a more efficient way?`,
+      "Remember to maintain good posture",
+    ];
+  } else if (progress < 0.6) {
+    return [
+      "You're in the flow! Keep the momentum going",
+      "If stuck, try breaking the problem down further",
+      "Stay hydrated and take deep breaths",
+    ];
+  } else if (progress < 0.9) {
+    return [
+      "Start wrapping up your current subtask",
+      "Document any important insights or progress",
+      "Prepare for a smooth transition to your next task",
+    ];
+  } else {
+    return [
+      "Review what you've accomplished",
+      "Note down any remaining items for the next session",
+      "Celebrate your progress!",
+    ];
+  }
+};
+
+const getTaskSuggestions = (taskDescription: string) => {
+  if (!taskDescription) return [];
+
+  const suggestions = [
+    "Break this down into 2-3 smaller subtasks",
+    "Set a specific outcome you want to achieve",
+    "What's the first small step you can take?",
+    "Consider potential blockers and solutions",
+  ];
+
+  return suggestions;
+};
+
 export default function DeepWorkGuide() {
   const [isRunning, setIsRunning] = useState(false);
   const [duration, setDuration] = useState("25");
@@ -50,15 +101,13 @@ export default function DeepWorkGuide() {
   const [selectedSound, setSelectedSound] = useState(soundscapes[0]);
   const [volume, setVolume] = useState(30);
   const [notes, setNotes] = useState("");
+  const [currentPrompts, setCurrentPrompts] = useState<string[]>([]);
+  const [showTaskSuggestions, setShowTaskSuggestions] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout>();
   const startTimeRef = useRef<number>();
   const noiseRef = useRef<Tone.Noise | null>(null);
   const synthRef = useRef<Tone.Synth | null>(null);
-  const bellRef = useRef<Howl>(new Howl({
-    src: ['/meditation-bell.mp3'],
-    volume: 0.5,
-  }));
 
   useEffect(() => {
     // Initialize audio
@@ -107,7 +156,7 @@ export default function DeepWorkGuide() {
     const sessionDuration = duration === "custom" 
       ? parseInt(customDuration) 
       : parseInt(duration);
-    
+
     setRemainingTime(sessionDuration * 60);
     startTimeRef.current = Date.now();
 
@@ -125,7 +174,6 @@ export default function DeepWorkGuide() {
       playNote();
     }
 
-    bellRef.current.play();
     setIsRunning(true);
 
     timerRef.current = setInterval(() => {
@@ -135,6 +183,9 @@ export default function DeepWorkGuide() {
 
       setRemainingTime(remaining);
       setProgress(newProgress);
+
+      // Update prompts based on progress
+      setCurrentPrompts(getSessionPrompts(elapsed / 1000, sessionDuration * 60, currentTask));
 
       if (remaining === 0) {
         endSession();
@@ -149,10 +200,9 @@ export default function DeepWorkGuide() {
     if (noiseRef.current) {
       noiseRef.current.stop();
     }
-    bellRef.current.play();
     setIsRunning(false);
     setProgress(0);
-    
+
     if (currentTask) {
       setCompletedTasks(prev => [...prev, currentTask]);
       setCurrentTask("");
@@ -217,12 +267,37 @@ export default function DeepWorkGuide() {
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Current Task</label>
-          <Input
-            placeholder="What are you working on?"
-            value={currentTask}
-            onChange={(e) => setCurrentTask(e.target.value)}
-            disabled={isRunning}
-          />
+          <div className="relative">
+            <Input
+              placeholder="What are you working on?"
+              value={currentTask}
+              onChange={(e) => {
+                setCurrentTask(e.target.value);
+                setShowTaskSuggestions(true);
+              }}
+              onFocus={() => setShowTaskSuggestions(true)}
+              disabled={isRunning}
+            />
+            {showTaskSuggestions && currentTask && (
+              <div className="absolute z-10 w-full mt-1 p-2 bg-background border rounded-md shadow-lg">
+                <p className="text-sm font-medium mb-2">Suggestions:</p>
+                <ul className="space-y-1">
+                  {getTaskSuggestions(currentTask).map((suggestion, index) => (
+                    <li
+                      key={index}
+                      className="text-sm text-muted-foreground hover:text-foreground cursor-pointer p-1 rounded hover:bg-accent"
+                      onClick={() => {
+                        setNotes(notes ? `${notes}\n- ${suggestion}` : `- ${suggestion}`);
+                        setShowTaskSuggestions(false);
+                      }}
+                    >
+                      {suggestion}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -264,6 +339,32 @@ export default function DeepWorkGuide() {
             </SelectContent>
           </Select>
         </div>
+
+        {isRunning && currentPrompts.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="border rounded-lg p-4 bg-accent/10"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <MessageSquare className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Focus Guide</span>
+            </div>
+            <ul className="space-y-2">
+              {currentPrompts.map((prompt, index) => (
+                <motion.li
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="text-sm text-muted-foreground"
+                >
+                  {prompt}
+                </motion.li>
+              ))}
+            </ul>
+          </motion.div>
+        )}
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Session Notes</label>
