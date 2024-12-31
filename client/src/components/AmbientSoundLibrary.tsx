@@ -18,20 +18,18 @@ import {
   TreePine,
   Cloud,
   Umbrella,
-  Music,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import * as Tone from "tone";
 
 const soundLibrary = [
-  { id: "white", name: "White Noise", icon: Wind, frequency: 1 },
-  { id: "pink", name: "Pink Noise", icon: Wind, frequency: 0.5 },
-  { id: "brown", name: "Brown Noise", icon: Wind, frequency: 0.25 },
-  { id: "waves", name: "Ocean Waves", icon: Waves, frequency: 0.1 },
-  { id: "rain", name: "Gentle Rain", icon: Umbrella, frequency: 0.3 },
-  { id: "thunder", name: "Distant Thunder", icon: Cloud, frequency: 0.05 },
-  { id: "forest", name: "Forest Birds", icon: TreePine, frequency: 0.4 },
-  { id: "chimes", name: "Wind Chimes", icon: Music, frequency: 0.2 },
+  { id: "white", name: "White Noise", icon: Wind, frequency: 1, noiseType: "white" },
+  { id: "pink", name: "Pink Noise", icon: Wind, frequency: 0.5, noiseType: "pink" },
+  { id: "brown", name: "Brown Noise", icon: Wind, frequency: 0.25, noiseType: "brown" },
+  { id: "waves", name: "Ocean Waves", icon: Waves, frequency: 0.1, noiseType: "brown" },
+  { id: "rain", name: "Gentle Rain", icon: Umbrella, frequency: 0.3, noiseType: "pink" },
+  { id: "thunder", name: "Distant Thunder", icon: Cloud, frequency: 0.05, noiseType: "brown" },
+  { id: "forest", name: "Forest Ambience", icon: TreePine, frequency: 0.4, noiseType: "pink" },
 ];
 
 export default function AmbientSoundLibrary() {
@@ -48,7 +46,7 @@ export default function AmbientSoundLibrary() {
   useEffect(() => {
     // Create the noise generator and filter chain
     const newNoise = new Tone.Noise({
-      type: currentSound.id as "white" | "pink" | "brown",
+      type: currentSound.noiseType as "white" | "pink" | "brown",
       volume: Tone.gainToDb(volume / 100),
     });
 
@@ -119,7 +117,7 @@ export default function AmbientSoundLibrary() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Music className="h-5 w-5 text-primary" />
+          <Wind className="h-5 w-5 text-primary" />
           Ambient Sound Library
         </CardTitle>
       </CardHeader>
