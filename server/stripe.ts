@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { users, subscriptions, type SelectUser } from "@db/schema";
+import { users, subscriptions, type SelectUser, subscriptionPlans } from "@db/schema";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
 
@@ -56,11 +56,20 @@ export async function createSubscription(
       expand: ['latest_invoice.payment_intent'],
     });
 
-    // Store subscription info in our database
+    // Get the subscription plan ID from our database based on the price ID
+    const plan = await db.query.subscriptionPlans.findFirst({
+      where: eq(subscriptionPlans.priceId, actualPriceId),
+    });
+
+    if (!plan) {
+      throw new Error(`Could not find subscription plan for price ID: ${actualPriceId}`);
+    }
+
+    // Store subscription info in our database using the correct plan ID
     await db.insert(subscriptions).values({
       userId,
       stripeSubscriptionId: subscription.id,
-      planId: priceId === SUBSCRIPTION_PRICES.premium ? 2 : 3, // premium or professional plan ID
+      planId: plan.id,  // Use the actual plan ID from our database
       status: subscription.status,
       startDate: new Date(subscription.current_period_start * 1000),
       endDate: new Date(subscription.current_period_end * 1000),
