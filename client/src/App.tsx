@@ -6,6 +6,10 @@ import Home from "@/pages/Home";
 import JournalEntry from "@/pages/JournalEntry";
 import WellnessGoals from "@/pages/WellnessGoals";
 import AuthPage from "@/pages/AuthPage";
+import MeditationPage from "@/pages/MeditationPage";
+import ProductivityPage from "@/pages/ProductivityPage";
+import SettingsPage from "@/pages/SettingsPage";
+import Navigation from "@/components/Navigation";
 import { Toaster } from "@/components/ui/toaster";
 
 function App() {
@@ -25,12 +29,18 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/entry/:id?" component={JournalEntry} />
-        <Route path="/goals" component={WellnessGoals} />
-        <Route component={NotFound} />
-      </Switch>
+      <Navigation />
+      <main className="pt-16 pb-16 md:pb-0">
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/entry/:id?" component={JournalEntry} />
+          <Route path="/goals" component={WellnessGoals} />
+          <Route path="/meditation" component={MeditationPage} />
+          <Route path="/productivity" component={ProductivityPage} />
+          <Route path="/settings" component={SettingsPage} />
+          <Route component={NotFound} />
+        </Switch>
+      </main>
       <Toaster />
     </div>
   );
