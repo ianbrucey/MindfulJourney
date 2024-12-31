@@ -1,5 +1,5 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import ws from "ws";
 import * as schema from "@db/schema";
 
 if (!process.env.DATABASE_URL) {
@@ -8,14 +8,8 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Configure database with proper connection handling and retry logic
-const client = postgres(process.env.DATABASE_URL, {
-  max: 1,
-  idle_timeout: 20,
-  connect_timeout: 10,
+export const db = drizzle({
+  connection: process.env.DATABASE_URL,
+  schema,
+  ws: ws,
 });
-
-export const db = drizzle(client, { schema });
-
-// Export schema types for use in other parts of the application
-export type Schema = typeof schema;

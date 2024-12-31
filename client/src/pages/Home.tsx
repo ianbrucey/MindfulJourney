@@ -9,7 +9,6 @@ import AffirmationCard from "@/components/AffirmationCard";
 import StreakCounter from "@/components/StreakCounter";
 import AchievementsList from "@/components/AchievementsList";
 import DailyChallenge from "@/components/DailyChallenge";
-import DailyPlanner from "@/components/DailyPlanner";
 import AmbientSoundLibrary from "@/components/AmbientSoundLibrary";
 import ThemeSelector from "@/components/ThemeSelector";
 import EmotionMap from "@/components/EmotionMap";
@@ -50,30 +49,26 @@ export default function Home() {
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.3}>
-            <DailyPlanner />
-          </AnimatedContainer>
-
-          <AnimatedContainer delay={0.4}>
             <GuidedMeditation />
           </AnimatedContainer>
 
-          <AnimatedContainer delay={0.5}>
+          <AnimatedContainer delay={0.4}>
             <EmotionMap entries={entries || []} />
           </AnimatedContainer>
 
-          <AnimatedContainer delay={0.6}>
+          <AnimatedContainer delay={0.5}>
             <AmbientSoundLibrary />
           </AnimatedContainer>
 
-          <AnimatedContainer delay={0.7}>
+          <AnimatedContainer delay={0.6}>
             <MusicPlaylistGenerator />
           </AnimatedContainer>
 
-          <AnimatedContainer delay={0.8}>
+          <AnimatedContainer delay={0.7}>
             <ThemeSelector />
           </AnimatedContainer>
 
-          <AnimatedContainer delay={0.9}>
+          <AnimatedContainer delay={0.8}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

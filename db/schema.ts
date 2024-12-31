@@ -91,14 +91,6 @@ export const goalProgress = pgTable("goal_progress", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const plannerMessages = pgTable("planner_messages", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  role: text("role").notNull(), 
-  content: text("content").notNull(),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
-});
-
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = typeof users.$inferInsert;
@@ -138,8 +130,3 @@ export const insertGoalProgressSchema = createInsertSchema(goalProgress);
 export const selectGoalProgressSchema = createSelectSchema(goalProgress);
 export type InsertGoalProgress = typeof goalProgress.$inferInsert;
 export type SelectGoalProgress = typeof goalProgress.$inferSelect;
-
-export const insertPlannerMessageSchema = createInsertSchema(plannerMessages);
-export const selectPlannerMessageSchema = createSelectSchema(plannerMessages);
-export type InsertPlannerMessage = typeof plannerMessages.$inferInsert;
-export type SelectPlannerMessage = typeof plannerMessages.$inferSelect;
