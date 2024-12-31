@@ -9,6 +9,7 @@ import AuthPage from "@/pages/AuthPage";
 import MeditationPage from "@/pages/MeditationPage";
 import ProductivityPage from "@/pages/ProductivityPage";
 import SettingsPage from "@/pages/SettingsPage";
+import TalkItOutPage from "@/pages/TalkItOutPage";
 import Navigation from "@/components/Navigation";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -37,6 +38,7 @@ function App() {
           <Route path="/goals" component={WellnessGoals} />
           <Route path="/meditation" component={MeditationPage} />
           <Route path="/productivity" component={ProductivityPage} />
+          <Route path="/talk" component={TalkItOutPage} />
           <Route path="/settings" component={SettingsPage} />
           <Route component={NotFound} />
         </Switch>

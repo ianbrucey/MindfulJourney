@@ -1,11 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Book, Brain, Settings, Zap } from "lucide-react";
+import { Book, Brain, Settings, Zap, MessageCircle } from "lucide-react";
 
 const routes = [
   { name: "Journal", path: "/", icon: Book },
   { name: "Meditation", path: "/meditation", icon: Brain },
   { name: "Productivity", path: "/productivity", icon: Zap },
+  { name: "Talk it out", path: "/talk", icon: MessageCircle },
   { name: "Settings", path: "/settings", icon: Settings },
 ];
 
