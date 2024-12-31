@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -35,7 +35,7 @@ export default function BreathingExercise({ onComplete }: BreathingExerciseProps
       const newProgress = (elapsed / duration) * 100;
 
       if (newProgress >= 100) {
-        let nextPhase: typeof phase;
+        let nextPhase: typeof phase = "inhale"; // Corrected initialization
         switch (phase) {
           case "inhale":
             nextPhase = "hold";
@@ -101,22 +101,15 @@ export default function BreathingExercise({ onComplete }: BreathingExerciseProps
         </div>
 
         <div className="relative h-40 flex items-center justify-center">
-          <AnimatePresence mode="wait">
-            {isActive && (
-              <motion.div
-                key={phase}
-                initial={{ scale: phase === "inhale" ? 0.8 : 1.2 }}
-                animate={{ 
-                  scale: phase === "inhale" ? 1.2 : 
-                         phase === "exhale" ? 0.8 : 
-                         1
-                }}
-                exit={{ scale: 1 }}
-                transition={{ duration: DURATIONS[phase] / 1000 }}
-                className="absolute w-32 h-32 bg-primary/20 rounded-full"
-              />
-            )}
-          </AnimatePresence>
+          <motion.div
+            animate={{ 
+              scale: phase === "inhale" ? 1.2 : 
+                     phase === "exhale" ? 0.8 : 
+                     1
+            }}
+            transition={{ duration: DURATIONS[phase] / 1000 }}
+            className="w-32 h-32 bg-primary/20 rounded-full"
+          />
         </div>
 
         <Progress value={progress} className="h-2" />
