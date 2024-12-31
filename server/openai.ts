@@ -22,7 +22,7 @@ export async function generateAffirmation(): Promise<string> {
       max_tokens: 100,
     });
 
-    return response.choices[0].message.content?.trim() || "I am worthy of peace and happiness.";
+    return response.choices[0]?.message?.content?.trim() || "I am worthy of peace and happiness.";
   } catch (error) {
     console.error("Error generating affirmation:", error);
     return "I am worthy of peace and happiness.";
@@ -69,15 +69,21 @@ export async function analyzeSentiment(content: string): Promise<{
       response_format: { type: "json_object" },
     });
 
-    const analysis = JSON.parse(response.choices[0].message.content);
+    const messageContent = response.choices[0]?.message?.content;
+    if (!messageContent) {
+      throw new Error("No response content received from OpenAI");
+    }
+
+    const analysis = JSON.parse(messageContent);
+
     return {
       sentiment: {
-        score: Math.max(1, Math.min(5, analysis.sentiment.score)),
-        label: analysis.sentiment.label,
+        score: Math.max(1, Math.min(5, analysis.sentiment?.score ?? 3)),
+        label: analysis.sentiment?.label ?? "neutral",
       },
-      themes: analysis.themes,
-      insights: analysis.insights,
-      recommendations: analysis.recommendations,
+      themes: analysis.themes ?? [],
+      insights: analysis.insights ?? "Unable to analyze the entry at this time.",
+      recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
     };
   } catch (error) {
     console.error("Error analyzing sentiment:", error);
