@@ -20,6 +20,8 @@ import { AiAssistantProvider } from "@sista/ai-assistant-react";
 function App() {
   const { user, isLoading } = useUser();
   const apiKey = import.meta.env.VITE_SISTA_AI_SECRET;
+  const path = window.location.pathname;
+  const isJoinPage = path.startsWith('/join/');
 
   if (isLoading) {
     return (
@@ -29,10 +31,11 @@ function App() {
     );
   }
 
-  // Special case: Allow join page even when not logged in
-  // It will handle the auth flow internally
-  const path = window.location.pathname;
-  if (path.startsWith('/join/') && !user) {
+  // Handle join page auth flow
+  if (isJoinPage) {
+    if (!user) {
+      return <AuthPage returnTo={path} />;
+    }
     return <JoinGroupPage />;
   }
 

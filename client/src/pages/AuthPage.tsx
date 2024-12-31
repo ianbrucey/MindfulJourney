@@ -22,7 +22,11 @@ const formSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-export default function AuthPage() {
+type AuthPageProps = {
+  returnTo?: string;
+};
+
+export default function AuthPage({ returnTo }: AuthPageProps) {
   const [isLogin, setIsLogin] = useState(true);
   const { toast } = useToast();
   const { login, register } = useUser();
@@ -53,8 +57,8 @@ export default function AuthPage() {
           ? "Successfully logged in"
           : "Your account has been created successfully",
       });
-      // Use the redirectTo URL from the server response
-      setLocation(result.redirectTo || '/');
+      // Use the redirectTo URL from the server response or the returnTo prop
+      setLocation(returnTo || result.redirectTo || '/');
     } catch (error: any) {
       toast({
         title: "Error",
