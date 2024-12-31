@@ -10,6 +10,7 @@ import MeditationPage from "@/pages/MeditationPage";
 import ProductivityPage from "@/pages/ProductivityPage";
 import SettingsPage from "@/pages/SettingsPage";
 import TalkItOutPage from "@/pages/TalkItOutPage";
+import MiniGamesPage from "@/pages/MiniGamesPage";
 import Navigation from "@/components/Navigation";
 import { Toaster } from "@/components/ui/toaster";
 import { AiAssistantProvider } from "@sista/ai-assistant-react";
@@ -63,6 +64,7 @@ function App() {
             <Route path="/meditation" component={MeditationPage} />
             <Route path="/productivity" component={ProductivityPage} />
             <Route path="/talk" component={TalkItOutPage} />
+            <Route path="/games" component={MiniGamesPage} />
             <Route path="/settings" component={SettingsPage} />
             <Route component={NotFound} />
           </Switch>
