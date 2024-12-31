@@ -16,6 +16,10 @@ import { AiAssistantProvider } from "@sista/ai-assistant-react";
 
 function App() {
   const { user, isLoading } = useUser();
+  const apiKey = import.meta.env.VITE_SISTA_AI_SECRET;
+
+  // Debug log to check if we can access the API key
+  console.log('Sista AI Key available:', !!apiKey);
 
   if (isLoading) {
     return (
@@ -29,8 +33,26 @@ function App() {
     return <AuthPage />;
   }
 
+  if (!apiKey) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="pt-6">
+            <div className="flex mb-4 gap-2">
+              <AlertCircle className="h-8 w-8 text-red-500" />
+              <h1 className="text-2xl font-bold text-gray-900">Configuration Error</h1>
+            </div>
+            <p className="mt-4 text-sm text-gray-600">
+              Sista AI API key is not configured. Please ensure VITE_SISTA_AI_SECRET is set in your environment variables.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <AiAssistantProvider apiKey={import.meta.env.VITE_SISTA_AI_SECRET}>
+    <AiAssistantProvider apiKey={apiKey}>
       <div className="min-h-screen bg-background">
         <Navigation />
         <main className="pt-16 pb-16 md:pb-0">
