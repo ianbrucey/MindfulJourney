@@ -1,4 +1,4 @@
-URL: https://docs.sista.ai/installation/download/?platform=react
+URL: https://docs.sista.ai/installation/download
 ---
 [Skip to main content](#__docusaurus_skipToContent_fallback)
 
