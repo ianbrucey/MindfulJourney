@@ -74,10 +74,10 @@ export default function JoinGroupPage() {
               Please log in or register to join this support group
             </p>
             <div className="flex flex-col gap-4">
-              <Button onClick={() => setLocation("/login")}>
+              <Button onClick={() => setLocation("/")}>
                 Login
               </Button>
-              <Button variant="outline" onClick={() => setLocation("/register")}>
+              <Button variant="outline" onClick={() => setLocation("/")}>
                 Register
               </Button>
             </div>
