@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/use-user";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -28,9 +29,10 @@ type AuthPageProps = {
 
 export default function AuthPage({ returnTo }: AuthPageProps) {
   const [isLogin, setIsLogin] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { login, register } = useUser();
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -41,6 +43,7 @@ export default function AuthPage({ returnTo }: AuthPageProps) {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsLoading(true);
     try {
       const action = isLogin ? login : register;
       const result = await action(values);
@@ -61,20 +64,17 @@ export default function AuthPage({ returnTo }: AuthPageProps) {
           : "Your account has been created successfully",
       });
 
-      // Use the redirectTo URL from the server response or the returnTo prop
-      if (returnTo) {
-        setLocation(returnTo);
-      } else if (result.redirectTo) {
-        setLocation(result.redirectTo);
-      } else {
-        setLocation('/');
-      }
+      // Navigate to the appropriate page
+      const destination = returnTo || result.redirectTo || '/';
+      navigate(destination);
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -121,7 +121,10 @@ export default function AuthPage({ returnTo }: AuthPageProps) {
                 )}
               />
 
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : null}
                 {isLogin ? "Login" : "Register"}
               </Button>
             </form>
@@ -132,6 +135,7 @@ export default function AuthPage({ returnTo }: AuthPageProps) {
               variant="ghost"
               className="text-sm"
               onClick={() => setIsLogin(!isLogin)}
+              disabled={isLoading}
             >
               {isLogin
                 ? "Don't have an account? Register"

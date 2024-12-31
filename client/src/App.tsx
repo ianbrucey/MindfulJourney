@@ -21,15 +21,16 @@ function App() {
   const path = window.location.pathname;
   const isJoinPage = path.startsWith('/join/');
 
+  // Show loading spinner while checking authentication
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-border" />
+      <div className="min-h-screen w-full flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  // Handle join page auth flow
+  // Special handling for join pages
   if (isJoinPage) {
     if (!user) {
       return <AuthPage returnTo={path} />;
@@ -37,14 +38,16 @@ function App() {
     return <JoinGroupPage />;
   }
 
+  // If not authenticated, show login page
   if (!user) {
     return <AuthPage />;
   }
 
+  // Authenticated routes
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <main className="pt-16 pb-16 md:pb-0">
+      <main className="pt-16 pb-16 md:pb-0 container mx-auto px-4">
         <Switch>
           <Route path="/" component={Home} />
           <Route path="/entry/:id?" component={JournalEntry} />
@@ -64,9 +67,10 @@ function App() {
   );
 }
 
+// 404 Page
 function NotFound() {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen w-full flex items-center justify-center">
       <Card className="w-full max-w-md mx-4">
         <CardContent className="pt-6">
           <div className="flex mb-4 gap-2">
