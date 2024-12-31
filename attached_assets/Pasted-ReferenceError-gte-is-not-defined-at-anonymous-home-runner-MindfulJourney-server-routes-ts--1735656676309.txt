@@ -1,0 +1,24 @@
+ReferenceError: gte is not defined
+    at <anonymous> (/home/runner/MindfulJourney/server/routes.ts:339:9)
+    at Layer.handle [as handle_request] (/home/runner/MindfulJourney/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/MindfulJourney/node_modules/express/lib/router/route.js:149:13)
+    at requireAuth (/home/runner/MindfulJourney/server/routes.ts:128:14)
+    at Layer.handle [as handle_request] (/home/runner/MindfulJourney/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/MindfulJourney/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/MindfulJourney/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/MindfulJourney/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/MindfulJourney/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/MindfulJourney/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/MindfulJourney/node_modules/express/lib/router/index.js:280:10)
+    at <anonymous> (/home/runner/MindfulJourney/server/auth.ts:156:5)
+    at Layer.handle [as handle_request] (/home/runner/MindfulJourney/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/MindfulJourney/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/MindfulJourney/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/MindfulJourney/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/MindfulJourney/node_modules/express/lib/router/index.js:280:10)
+    at strategy.pass (/home/runner/MindfulJourney/node_modules/passport/lib/middleware/authenticate.js:355:9)
+    at /home/runner/MindfulJourney/node_modules/passport/lib/strategies/session.js:120:12
+    at pass (/home/runner/MindfulJourney/node_modules/passport/lib/authenticator.js:352:31)
+    at deserialized (/home/runner/MindfulJourney/node_modules/passport/lib/authenticator.js:364:7)
+    at <anonymous> (/home/runner/MindfulJourney/server/auth.ts:88:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
