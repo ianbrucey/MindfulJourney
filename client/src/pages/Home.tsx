@@ -9,6 +9,7 @@ import AffirmationCard from "@/components/AffirmationCard";
 import StreakCounter from "@/components/StreakCounter";
 import AchievementsList from "@/components/AchievementsList";
 import DailyChallenge from "@/components/DailyChallenge";
+import AmbientSoundGenerator from "@/components/AmbientSoundGenerator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 
@@ -28,6 +29,8 @@ export default function Home() {
           <AffirmationCard affirmation={todayAffirmation} />
 
           <DailyChallenge />
+
+          <AmbientSoundGenerator />
 
           <StreakCounter
             currentStreak={user?.currentStreak || 0}
