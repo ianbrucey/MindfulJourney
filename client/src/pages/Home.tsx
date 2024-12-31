@@ -17,6 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { AnimatedContainer } from "@/components/ui/animated-container";
 import { motion } from "framer-motion";
 import ShareDialog from "@/components/ShareDialog";
+import GuidedMeditation from "@/components/GuidedMeditation";
 
 export default function Home() {
   const { entries, todayAffirmation } = useJournal();
@@ -47,25 +48,29 @@ export default function Home() {
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.3}>
-            <EmotionMap entries={entries || []} />
+            <GuidedMeditation />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.4}>
-            <AmbientSoundGenerator />
+            <EmotionMap entries={entries || []} />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.5}>
-            <ThemeSelector />
+            <AmbientSoundGenerator />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.6}>
+            <ThemeSelector />
+          </AnimatedContainer>
+
+          <AnimatedContainer delay={0.7}>
             <StreakCounter
               currentStreak={user?.currentStreak || 0}
               longestStreak={user?.longestStreak || 0}
             />
           </AnimatedContainer>
 
-          <AnimatedContainer delay={0.7}>
+          <AnimatedContainer delay={0.8}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
