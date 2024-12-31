@@ -30,6 +30,7 @@ import type {
   SelectSupportTopic,
 } from "@db/schema";
 import { useToast } from "@/hooks/use-toast";
+import ChatInterface from "@/components/support/ChatInterface";
 
 const createGroupSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
@@ -203,34 +204,48 @@ export default function SupportNetworkPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button
-                onClick={() => setActiveGroup(null)}
-                className="w-full"
-                variant="outline"
-              >
-                <Search className="h-4 w-4 mr-2" />
-                Find Support Groups
-              </Button>
+              <Input
+                placeholder="Search support groups..."
+                className="mb-4"
+              />
 
               {/* My Groups */}
               <div className="space-y-2">
-                {memberships?.map((membership) => (
-                  <Button
-                    key={membership.id}
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => {
-                      const group = groups?.find(
-                        (g) => g.id === membership.groupId
-                      );
-                      if (group) setActiveGroup(group);
-                    }}
-                  >
-                    <UserCircle className="h-4 w-4 mr-2" />
-                    {membership.anonymousName}
-                  </Button>
-                ))}
+                {memberships?.map((membership) => {
+                  const group = groups?.find(
+                    (g) => g.id === membership.groupId
+                  );
+                  return (
+                    <Button
+                      key={membership.id}
+                      variant={activeGroup?.id === group?.id ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        if (group) setActiveGroup(group);
+                      }}
+                    >
+                      <UserCircle className="h-4 w-4 mr-2" />
+                      {membership.anonymousName}
+                    </Button>
+                  );
+                })}
               </div>
+
+              {/* Available Groups */}
+              {groups?.filter(
+                (group) =>
+                  !memberships?.some((m) => m.groupId === group.id)
+              ).map((group) => (
+                <Button
+                  key={group.id}
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => setActiveGroup(group)}
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  {group.name}
+                </Button>
+              ))}
             </CardContent>
           </Card>
         </AnimatedContainer>
@@ -250,7 +265,7 @@ export default function SupportNetworkPage() {
                   Join a support group to start chatting
                 </div>
               ) : (
-                <div>Chat interface will be implemented here</div>
+                <ChatInterface group={activeGroup} />
               )}
             </CardContent>
           </Card>
