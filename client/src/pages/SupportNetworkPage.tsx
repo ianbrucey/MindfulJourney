@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, MessageCircle, Search, UserCircle, Plus } from "lucide-react";
+import { Users, MessageCircle, Plus } from "lucide-react";
 import { AnimatedContainer } from "@/components/ui/animated-container";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -43,18 +43,19 @@ const createGroupSchema = z.object({
 export default function SupportNetworkPage() {
   const [activeGroup, setActiveGroup] = useState<SelectSupportGroup | null>(null);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: groups } = useQuery<SelectSupportGroup[]>({
+  const { data: groups = [] } = useQuery<SelectSupportGroup[]>({
     queryKey: ["/api/support-groups"],
   });
 
-  const { data: topics } = useQuery<SelectSupportTopic[]>({
+  const { data: topics = [] } = useQuery<SelectSupportTopic[]>({
     queryKey: ["/api/support-topics"],
   });
 
-  const { data: memberships } = useQuery<SelectGroupMembership[]>({
+  const { data: memberships = [] } = useQuery<SelectGroupMembership[]>({
     queryKey: ["/api/support-groups/memberships"],
   });
 
@@ -103,6 +104,21 @@ export default function SupportNetworkPage() {
   const onSubmit = form.handleSubmit((data) => {
     createGroupMutation.mutate(data);
   });
+
+  // Filter groups based on search query
+  const filteredGroups = groups.filter(group =>
+    group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    group.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Separate joined and available groups
+  const joinedGroups = filteredGroups.filter(group =>
+    memberships?.some(m => m.groupId === group.id)
+  );
+
+  const availableGroups = filteredGroups.filter(group =>
+    !memberships?.some(m => m.groupId === group.id)
+  );
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -206,46 +222,52 @@ export default function SupportNetworkPage() {
             <CardContent className="space-y-4">
               <Input
                 placeholder="Search support groups..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="mb-4"
               />
 
               {/* My Groups */}
-              <div className="space-y-2">
-                {memberships?.map((membership) => {
-                  const group = groups?.find(
-                    (g) => g.id === membership.groupId
-                  );
-                  return (
+              {joinedGroups.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">My Groups</h3>
+                  {joinedGroups.map((group) => (
                     <Button
-                      key={membership.id}
-                      variant={activeGroup?.id === group?.id ? "default" : "ghost"}
+                      key={group.id}
+                      variant={activeGroup?.id === group.id ? "default" : "ghost"}
                       className="w-full justify-start"
-                      onClick={() => {
-                        if (group) setActiveGroup(group);
-                      }}
+                      onClick={() => setActiveGroup(group)}
                     >
-                      <UserCircle className="h-4 w-4 mr-2" />
-                      {membership.anonymousName}
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      {group.name}
                     </Button>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
 
               {/* Available Groups */}
-              {groups?.filter(
-                (group) =>
-                  !memberships?.some((m) => m.groupId === group.id)
-              ).map((group) => (
-                <Button
-                  key={group.id}
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => setActiveGroup(group)}
-                >
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  {group.name}
-                </Button>
-              ))}
+              {availableGroups.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Available Groups</h3>
+                  {availableGroups.map((group) => (
+                    <Button
+                      key={group.id}
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => setActiveGroup(group)}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      {group.name}
+                    </Button>
+                  ))}
+                </div>
+              )}
+
+              {filteredGroups.length === 0 && (
+                <p className="text-center text-muted-foreground">
+                  No groups found matching your search
+                </p>
+              )}
             </CardContent>
           </Card>
         </AnimatedContainer>
