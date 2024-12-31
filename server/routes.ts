@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth.js";
 import { db } from "@db";
-import { entries, affirmations, achievements, userAchievements, users, wellnessGoals, goalProgress, dailyChallenges } from "@db/schema";
+import { entries, affirmations, achievements, userAchievements, users, wellnessGoals, goalProgress, dailyChallenges, plannerMessages } from "@db/schema";
 import { eq, desc, and, gte, lte } from "drizzle-orm";
 import { generateAffirmation, analyzeSentiment, generateDailyChallenge } from "./openai.js";
 import type { SelectUser } from "@db/schema";
@@ -411,6 +411,47 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get planner conversation history
+  app.get("/api/planner/messages", requireAuth, async (req, res) => {
+    const messages = await db.query.plannerMessages.findMany({
+      where: eq(plannerMessages.userId, req.user!.id),
+      orderBy: [desc(plannerMessages.timestamp)],
+    });
+    res.json(messages);
+  });
+
+  // Send a new message to the planner
+  app.post("/api/planner/messages", requireAuth, async (req, res) => {
+    const userMessage = {
+      userId: req.user!.id,
+      role: "user",
+      content: req.body.content,
+    };
+
+    // Save user message
+    await db.insert(plannerMessages).values(userMessage);
+
+    // Get AI response using OpenAI
+    const aiResponse = await generatePlannerResponse(req.body.content);
+
+    // Save AI response
+    const [savedResponse] = await db.insert(plannerMessages)
+      .values({
+        userId: req.user!.id,
+        role: "assistant",
+        content: aiResponse,
+      })
+      .returning();
+
+    res.json(savedResponse);
+  });
+
+
   const httpServer = createServer(app);
   return httpServer;
+}
+
+async function generatePlannerResponse(userMessage: string): Promise<string> {
+  // This is a placeholder.  Replace with actual OpenAI integration
+  return "This is a sample response from the planner.";
 }

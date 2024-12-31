@@ -142,3 +142,39 @@ export async function analyzeSentiment(content: string): Promise<{
     };
   }
 }
+
+export async function generatePlannerResponse(userMessage: string): Promise<string> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are a supportive and knowledgeable AI daily planner assistant, focused on helping users organize their day while incorporating mindfulness and well-being practices.
+
+          Your responsibilities include:
+          1. Helping users plan and structure their day
+          2. Suggesting mindful breaks and wellness activities
+          3. Providing time management advice
+          4. Offering emotional support and motivation
+          5. Recommending healthy habits and routines
+
+          Keep responses concise (2-3 sentences) but warm and encouraging.
+          When suggesting activities, be specific about timing and duration.
+          Focus on practical, actionable advice that balances productivity with well-being.`,
+        },
+        {
+          role: "user",
+          content: userMessage,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 200,
+    });
+
+    return response.choices[0]?.message?.content?.trim() || "I'm here to help you plan your day. What would you like to focus on?";
+  } catch (error) {
+    console.error("Error generating planner response:", error);
+    return "I'm here to help you plan your day. What would you like to focus on?";
+  }
+}
