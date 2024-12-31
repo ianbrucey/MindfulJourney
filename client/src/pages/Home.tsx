@@ -12,6 +12,7 @@ import DailyChallenge from "@/components/DailyChallenge";
 import AmbientSoundLibrary from "@/components/AmbientSoundLibrary";
 import ThemeSelector from "@/components/ThemeSelector";
 import EmotionMap from "@/components/EmotionMap";
+import EmotionalIntelligenceCoach from "@/components/EmotionalIntelligenceCoach";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { AnimatedContainer } from "@/components/ui/animated-container";
@@ -31,7 +32,7 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-6">
           <AnimatedContainer>
-            <motion.h1 
+            <motion.h1
               className="text-4xl font-bold text-foreground/90 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -54,26 +55,30 @@ export default function Home() {
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.4}>
-            <EmotionMap entries={entries || []} />
+            <EmotionalIntelligenceCoach />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.5}>
-            <DeepWorkGuide />
+            <EmotionMap entries={entries || []} />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.6}>
-            <AmbientSoundLibrary />
+            <DeepWorkGuide />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.7}>
-            <MusicPlaylistGenerator />
+            <AmbientSoundLibrary />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.8}>
-            <ThemeSelector />
+            <MusicPlaylistGenerator />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.9}>
+            <ThemeSelector />
+          </AnimatedContainer>
+
+          <AnimatedContainer delay={1.0}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

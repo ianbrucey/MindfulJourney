@@ -171,7 +171,7 @@ export async function getFocusMotivation(
           content: `Current Task: ${context.currentTask}
 Session Duration: ${context.sessionDuration} minutes
 Time Elapsed: ${Math.floor(context.elapsedTime / 60)} minutes
-
+          
 ${message}`,
         },
       ],
@@ -179,10 +179,90 @@ ${message}`,
       max_tokens: 150,
     });
 
-    return response.choices[0]?.message?.content?.trim() || 
+    return response.choices[0]?.message?.content?.trim() ||
       "Stay focused and take one step at a time. You're making progress!";
   } catch (error) {
     console.error("Error getting focus motivation:", error);
     return "Stay focused and take one step at a time. You're making progress!";
+  }
+}
+
+export async function analyzeEmotionalIntelligence(
+  content: string,
+  previousEntries: Array<{ content: string; createdAt: string }> = []
+): Promise<{
+  emotionalPatterns: Array<{
+    emotion: string;
+    frequency: number;
+    triggers: string[];
+  }>;
+  insights: {
+    strengths: string[];
+    growthAreas: string[];
+    recommendations: string[];
+  };
+  coaching: {
+    observation: string;
+    guidance: string;
+    exercises: Array<{
+      name: string;
+      description: string;
+      duration: string;
+      benefit: string;
+    }>;
+  };
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert emotional intelligence coach with deep expertise in psychology and mindfulness.
+          Analyze the user's journal entries to identify emotional patterns, provide insights, and offer personalized coaching.
+          Focus on emotional awareness, regulation, and growth.
+          Consider both the current entry and previous entries to identify patterns over time.
+          Provide actionable guidance and specific exercises for emotional development.`,
+        },
+        {
+          role: "user",
+          content: `Current Entry: ${content}
+Previous Entries: ${previousEntries.map(entry =>
+            `[${entry.createdAt}] ${entry.content}`).join('\n')}`,
+        },
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const result = JSON.parse(response.choices[0]?.message?.content || "{}");
+
+    return {
+      emotionalPatterns: result.emotionalPatterns || [],
+      insights: {
+        strengths: result.insights?.strengths || [],
+        growthAreas: result.insights?.growthAreas || [],
+        recommendations: result.insights?.recommendations || [],
+      },
+      coaching: {
+        observation: result.coaching?.observation || "Unable to provide observation",
+        guidance: result.coaching?.guidance || "Unable to provide guidance",
+        exercises: result.coaching?.exercises || [],
+      },
+    };
+  } catch (error) {
+    console.error("Error analyzing emotional intelligence:", error);
+    return {
+      emotionalPatterns: [],
+      insights: {
+        strengths: [],
+        growthAreas: [],
+        recommendations: [],
+      },
+      coaching: {
+        observation: "Unable to analyze at this time",
+        guidance: "Please try again later",
+        exercises: [],
+      },
+    };
   }
 }

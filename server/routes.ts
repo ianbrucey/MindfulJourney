@@ -4,7 +4,7 @@ import { setupAuth } from "./auth.js";
 import { db } from "@db";
 import { entries, affirmations, achievements, userAchievements, users, wellnessGoals, goalProgress, dailyChallenges } from "@db/schema";
 import { eq, desc, and, gte, lte } from "drizzle-orm";
-import { generateAffirmation, analyzeSentiment, generateDailyChallenge, getFocusMotivation } from "./openai.js";
+import { generateAffirmation, analyzeSentiment, generateDailyChallenge, getFocusMotivation, analyzeEmotionalIntelligence } from "./openai.js";
 import type { SelectUser } from "@db/schema";
 import fs from "fs/promises";
 import path from "path";
@@ -422,6 +422,36 @@ export function registerRoutes(app: Express): Server {
       res.status(500).send("Failed to get focus motivation");
     }
   });
+
+  // Get emotional intelligence analysis
+  app.get("/api/emotional-intelligence/analysis", requireAuth, async (req, res) => {
+    try {
+      // Get recent entries for the user
+      const recentEntries = await db.query.entries.findMany({
+        where: eq(entries.userId, req.user!.id),
+        orderBy: [desc(entries.createdAt)],
+        limit: 10,
+      });
+
+      if (recentEntries.length === 0) {
+        return res.status(400).send("No journal entries found for analysis");
+      }
+
+      const analysis = await analyzeEmotionalIntelligence(
+        recentEntries[0].content,
+        recentEntries.slice(1).map(entry => ({
+          content: entry.content,
+          createdAt: entry.createdAt.toISOString(),
+        }))
+      );
+
+      res.json(analysis);
+    } catch (error) {
+      console.error("Error getting emotional intelligence analysis:", error);
+      res.status(500).send("Failed to get emotional intelligence analysis");
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;
