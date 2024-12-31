@@ -14,6 +14,7 @@ import { Loader2, Play, Pause, Brain, Wind, Volume2, Waves, TreePine, Music } fr
 import { motion, AnimatePresence } from "framer-motion";
 import { Howl } from "howler";
 import * as Tone from "tone";
+import WaveformVisualizer from "./WaveformVisualizer";
 
 // Musical scales for relaxing melodies
 const scales = {
@@ -333,6 +334,12 @@ export default function GuidedMeditation() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <WaveformVisualizer
+          isPlaying={isPlaying}
+          ambientVolume={ambientVolume}
+          musicVolume={musicVolume}
+          isMusicEnabled={isMusicEnabled}
+        />
         <div className="space-y-2">
           <label className="text-sm font-medium">Meditation Type</label>
           <Select
