@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,7 +18,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/use-user";
 import { Loader2, Brain } from "lucide-react";
 
-const formSchema = z.object({
+// Separate schemas for login and registration
+const loginSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   email: z.string().email("Invalid email address"),
@@ -37,8 +43,8 @@ export default function AuthPage({ returnTo }: AuthPageProps) {
   const { login, register } = useUser();
   const [, navigate] = useLocation();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof registerSchema>>({
+    resolver: zodResolver(isLogin ? loginSchema : registerSchema),
     defaultValues: {
       username: "",
       password: "",
@@ -48,15 +54,20 @@ export default function AuthPage({ returnTo }: AuthPageProps) {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
     try {
       const action = isLogin ? login : register;
-      const result = await action(values);
+      // Only send required fields for login
+      const payload = isLogin 
+        ? { username: values.username, password: values.password }
+        : values;
+
+      const result = await action(payload);
 
       if (!result.ok) {
         toast({
-          title: "Error",
+          title: isLogin ? "Login failed" : "Registration failed",
           description: result.message,
           variant: "destructive",
         });
@@ -113,6 +124,24 @@ export default function AuthPage({ returnTo }: AuthPageProps) {
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Enter your password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {!isLogin && (
                 <>
                   <FormField
@@ -160,24 +189,6 @@ export default function AuthPage({ returnTo }: AuthPageProps) {
                   </div>
                 </>
               )}
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Enter your password"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
