@@ -17,7 +17,17 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useState } from "react";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+// Initialize stripe after getting the publishable key from the API
+let stripePromise: Promise<any> | null = null;
+
+function getStripe() {
+  if (!stripePromise) {
+    stripePromise = fetch('/api/subscription/config')
+      .then(r => r.json())
+      .then(({ publishableKey }) => loadStripe(publishableKey));
+  }
+  return stripePromise;
+}
 
 function CheckoutForm({ clientSecret }: { clientSecret: string }) {
   const stripe = useStripe();
@@ -188,7 +198,7 @@ export default function SubscriptionPage() {
                 {clientSecret && selectedPlan === plan.name ? (
                   <div className="w-full">
                     <Elements
-                      stripe={stripePromise}
+                      stripe={getStripe()}
                       options={{
                         clientSecret,
                         appearance: { theme: 'stripe' },
