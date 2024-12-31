@@ -71,8 +71,25 @@ export default function JournalForm({ entry }: JournalFormProps) {
     form.setValue("content", `Today's Prompt: ${randomPrompt}\n\n`, { shouldValidate: false });
   };
 
+  const skipBreathing = () => {
+    setShowBreathing(false);
+    const randomPrompt = journalPrompts[Math.floor(Math.random() * journalPrompts.length)];
+    form.setValue("content", `Today's Prompt: ${randomPrompt}\n\n`, { shouldValidate: false });
+  };
+
   if (showBreathing) {
-    return <BreathingExercise onComplete={handleBreathingComplete} />;
+    return (
+      <div className="space-y-4">
+        <BreathingExercise onComplete={handleBreathingComplete} />
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={skipBreathing}
+        >
+          Skip Exercise
+        </Button>
+      </div>
+    );
   }
 
   return (
