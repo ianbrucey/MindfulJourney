@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as Tone from "tone";
+import FocusMotivationChat from "./FocusMotivationChat";
 
 const sessionDurations = [
   { value: "25", label: "25 minutes (Pomodoro)" },
@@ -153,8 +154,8 @@ export default function DeepWorkGuide() {
 
   const startSession = async () => {
     await Tone.start();
-    const sessionDuration = duration === "custom" 
-      ? parseInt(customDuration) 
+    const sessionDuration = duration === "custom"
+      ? parseInt(customDuration)
       : parseInt(duration);
 
     setRemainingTime(sessionDuration * 60);
@@ -224,195 +225,213 @@ export default function DeepWorkGuide() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Session Progress</span>
-            <span className="font-medium">{formatTime(remainingTime)}</span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Session Progress</span>
+                <span className="font-medium">{formatTime(remainingTime)}</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Session Duration</label>
+              <Select
+                value={duration}
+                onValueChange={setDuration}
+                disabled={isRunning}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select duration" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sessionDurations.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Session Duration</label>
-          <Select
-            value={duration}
-            onValueChange={setDuration}
-            disabled={isRunning}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select duration" />
-            </SelectTrigger>
-            <SelectContent>
-              {sessionDurations.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              {duration === "custom" && (
+                <Input
+                  type="number"
+                  placeholder="Enter minutes"
+                  value={customDuration}
+                  onChange={(e) => setCustomDuration(e.target.value)}
+                  min="1"
+                  max="180"
+                  className="mt-2"
+                  disabled={isRunning}
+                />
+              )}
+            </div>
 
-          {duration === "custom" && (
-            <Input
-              type="number"
-              placeholder="Enter minutes"
-              value={customDuration}
-              onChange={(e) => setCustomDuration(e.target.value)}
-              min="1"
-              max="180"
-              className="mt-2"
-              disabled={isRunning}
-            />
-          )}
-        </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Current Task</label>
+              <div className="relative">
+                <Input
+                  placeholder="What are you working on?"
+                  value={currentTask}
+                  onChange={(e) => {
+                    setCurrentTask(e.target.value);
+                    setShowTaskSuggestions(true);
+                  }}
+                  onFocus={() => setShowTaskSuggestions(true)}
+                  disabled={isRunning}
+                />
+                {showTaskSuggestions && currentTask && (
+                  <div className="absolute z-10 w-full mt-1 p-2 bg-background border rounded-md shadow-lg">
+                    <p className="text-sm font-medium mb-2">Suggestions:</p>
+                    <ul className="space-y-1">
+                      {getTaskSuggestions(currentTask).map((suggestion, index) => (
+                        <li
+                          key={index}
+                          className="text-sm text-muted-foreground hover:text-foreground cursor-pointer p-1 rounded hover:bg-accent"
+                          onClick={() => {
+                            setNotes(notes ? `${notes}\n- ${suggestion}` : `- ${suggestion}`);
+                            setShowTaskSuggestions(false);
+                          }}
+                        >
+                          {suggestion}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Current Task</label>
-          <div className="relative">
-            <Input
-              placeholder="What are you working on?"
-              value={currentTask}
-              onChange={(e) => {
-                setCurrentTask(e.target.value);
-                setShowTaskSuggestions(true);
-              }}
-              onFocus={() => setShowTaskSuggestions(true)}
-              disabled={isRunning}
-            />
-            {showTaskSuggestions && currentTask && (
-              <div className="absolute z-10 w-full mt-1 p-2 bg-background border rounded-md shadow-lg">
-                <p className="text-sm font-medium mb-2">Suggestions:</p>
-                <ul className="space-y-1">
-                  {getTaskSuggestions(currentTask).map((suggestion, index) => (
-                    <li
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Wind className="h-4 w-4" />
+                  <label className="text-sm font-medium">Focus Soundscape</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Volume2 className="h-4 w-4" />
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={volume}
+                    onChange={(e) => setVolume(parseInt(e.target.value))}
+                    className="w-24"
+                  />
+                </div>
+              </div>
+
+              <Select
+                value={selectedSound.id}
+                onValueChange={(value) => {
+                  const sound = soundscapes.find(s => s.id === value);
+                  if (sound) setSelectedSound(sound);
+                }}
+                disabled={isRunning}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select sound" />
+                </SelectTrigger>
+                <SelectContent>
+                  {soundscapes.map((sound) => (
+                    <SelectItem key={sound.id} value={sound.id}>
+                      {sound.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {isRunning && currentPrompts.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="border rounded-lg p-4 bg-accent/10"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageSquare className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Focus Guide</span>
+                </div>
+                <ul className="space-y-2">
+                  {currentPrompts.map((prompt, index) => (
+                    <motion.li
                       key={index}
-                      className="text-sm text-muted-foreground hover:text-foreground cursor-pointer p-1 rounded hover:bg-accent"
-                      onClick={() => {
-                        setNotes(notes ? `${notes}\n- ${suggestion}` : `- ${suggestion}`);
-                        setShowTaskSuggestions(false);
-                      }}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="text-sm text-muted-foreground"
                     >
-                      {suggestion}
-                    </li>
+                      {prompt}
+                    </motion.li>
                   ))}
                 </ul>
-              </div>
+              </motion.div>
             )}
-          </div>
-        </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Wind className="h-4 w-4" />
-              <label className="text-sm font-medium">Focus Soundscape</label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Volume2 className="h-4 w-4" />
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={volume}
-                onChange={(e) => setVolume(parseInt(e.target.value))}
-                className="w-24"
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Session Notes</label>
+              <Textarea
+                placeholder="Capture your thoughts and progress..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="min-h-[100px]"
               />
             </div>
+
+            {completedTasks.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  Completed Tasks
+                </label>
+                <div className="space-y-2">
+                  {completedTasks.map((task, index) => (
+                    <div
+                      key={index}
+                      className="p-2 bg-primary/5 rounded-md text-sm"
+                    >
+                      {task}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Button
+              onClick={isRunning ? endSession : startSession}
+              className="w-full"
+              size="lg"
+              variant={isRunning ? "destructive" : "default"}
+            >
+              {isRunning ? (
+                <>
+                  <Pause className="h-4 w-4 mr-2" />
+                  End Session
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4 mr-2" />
+                  Start Deep Work Session
+                </>
+              )}
+            </Button>
           </div>
 
-          <Select
-            value={selectedSound.id}
-            onValueChange={(value) => {
-              const sound = soundscapes.find(s => s.id === value);
-              if (sound) setSelectedSound(sound);
-            }}
-            disabled={isRunning}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select sound" />
-            </SelectTrigger>
-            <SelectContent>
-              {soundscapes.map((sound) => (
-                <SelectItem key={sound.id} value={sound.id}>
-                  {sound.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {isRunning && currentPrompts.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="border rounded-lg p-4 bg-accent/10"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <MessageSquare className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">Focus Guide</span>
-            </div>
-            <ul className="space-y-2">
-              {currentPrompts.map((prompt, index) => (
-                <motion.li
-                  key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="text-sm text-muted-foreground"
-                >
-                  {prompt}
-                </motion.li>
-              ))}
-            </ul>
-          </motion.div>
-        )}
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Session Notes</label>
-          <Textarea
-            placeholder="Capture your thoughts and progress..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="min-h-[100px]"
+          <FocusMotivationChat
+            currentTask={currentTask}
+            sessionDuration={
+              duration === "custom"
+                ? parseInt(customDuration)
+                : parseInt(duration)
+            }
+            elapsedTime={
+              startTimeRef.current
+                ? Date.now() - startTimeRef.current
+                : 0
+            }
+            isRunning={isRunning}
           />
         </div>
-
-        {completedTasks.length > 0 && (
-          <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              Completed Tasks
-            </label>
-            <div className="space-y-2">
-              {completedTasks.map((task, index) => (
-                <div
-                  key={index}
-                  className="p-2 bg-primary/5 rounded-md text-sm"
-                >
-                  {task}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <Button
-          onClick={isRunning ? endSession : startSession}
-          className="w-full"
-          size="lg"
-          variant={isRunning ? "destructive" : "default"}
-        >
-          {isRunning ? (
-            <>
-              <Pause className="h-4 w-4 mr-2" />
-              End Session
-            </>
-          ) : (
-            <>
-              <Play className="h-4 w-4 mr-2" />
-              Start Deep Work Session
-            </>
-          )}
-        </Button>
       </CardContent>
     </Card>
   );

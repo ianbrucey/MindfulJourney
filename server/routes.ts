@@ -4,7 +4,7 @@ import { setupAuth } from "./auth.js";
 import { db } from "@db";
 import { entries, affirmations, achievements, userAchievements, users, wellnessGoals, goalProgress, dailyChallenges } from "@db/schema";
 import { eq, desc, and, gte, lte } from "drizzle-orm";
-import { generateAffirmation, analyzeSentiment, generateDailyChallenge } from "./openai.js";
+import { generateAffirmation, analyzeSentiment, generateDailyChallenge, getFocusMotivation } from "./openai.js";
 import type { SelectUser } from "@db/schema";
 import fs from "fs/promises";
 import path from "path";
@@ -408,6 +408,18 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error updating theme:", error);
       res.status(500).send("Failed to update theme");
+    }
+  });
+
+  // Focus motivation chat endpoint
+  app.post("/api/focus-chat", requireAuth, async (req, res) => {
+    try {
+      const { message, context } = req.body;
+      const response = await getFocusMotivation(message, context);
+      res.json({ message: response });
+    } catch (error) {
+      console.error("Error in focus chat:", error);
+      res.status(500).send("Failed to get focus motivation");
     }
   });
 

@@ -142,3 +142,47 @@ export async function analyzeSentiment(content: string): Promise<{
     };
   }
 }
+
+// New function for focus motivation chat
+export async function getFocusMotivation(
+  message: string,
+  context: {
+    currentTask: string;
+    sessionDuration: number;
+    elapsedTime: number;
+    previousMessages: Array<{ role: string; content: string }>;
+  }
+): Promise<string> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are an AI focus coach specializing in deep work and productivity. 
+          Your role is to provide motivation, guidance, and practical advice to help users stay focused and productive.
+          Consider the user's current task, session duration, and progress when giving advice.
+          Be concise, encouraging, and practical. Aim to boost motivation while providing actionable tips.
+          Maintain a supportive and professional tone.`,
+        },
+        ...context.previousMessages,
+        {
+          role: "user",
+          content: `Current Task: ${context.currentTask}
+Session Duration: ${context.sessionDuration} minutes
+Time Elapsed: ${Math.floor(context.elapsedTime / 60)} minutes
+
+${message}`,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 150,
+    });
+
+    return response.choices[0]?.message?.content?.trim() || 
+      "Stay focused and take one step at a time. You're making progress!";
+  } catch (error) {
+    console.error("Error getting focus motivation:", error);
+    return "Stay focused and take one step at a time. You're making progress!";
+  }
+}
