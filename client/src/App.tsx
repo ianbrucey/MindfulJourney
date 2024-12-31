@@ -13,6 +13,7 @@ import TalkItOutPage from "@/pages/TalkItOutPage";
 import MiniGamesPage from "@/pages/MiniGamesPage";
 import SupportNetworkPage from "@/pages/SupportNetworkPage";
 import JoinGroupPage from "@/pages/JoinGroupPage";
+import SubscriptionPage from "@/pages/SubscriptionPage";
 import Navigation from "@/components/Navigation";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -58,6 +59,7 @@ function App() {
           <Route path="/games" component={MiniGamesPage} />
           <Route path="/support" component={SupportNetworkPage} />
           <Route path="/settings" component={SettingsPage} />
+          <Route path="/subscription" component={SubscriptionPage} />
           <Route path="/join/:inviteCode" component={JoinGroupPage} />
           <Route component={NotFound} />
         </Switch>

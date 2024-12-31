@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, boolean, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, json, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 export const users = pgTable("users", {
@@ -10,6 +10,9 @@ export const users = pgTable("users", {
   currentStreak: integer("current_streak").default(0),
   longestStreak: integer("longest_streak").default(0),
   lastEntryDate: timestamp("last_entry_date"),
+  subscriptionTier: text("subscription_tier").default('basic'),
+  aiRequestsCount: integer("ai_requests_count").default(0),
+  ai_requests_reset_date: timestamp("ai_requests_reset_date"),
 });
 
 export const entries = pgTable("entries", {
@@ -88,6 +91,29 @@ export const goalProgress = pgTable("goal_progress", {
   goalId: integer("goal_id").notNull().references(() => wellnessGoals.id),
   value: integer("value").notNull(),
   note: text("note"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Add subscription plans table
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: serial("id").primaryKey(),
+  name: text("name").unique().notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  features: json("features").$type<string[]>(),
+  aiRequestsLimit: integer("ai_requests_limit"),
+  groupLimit: integer("group_limit"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Add subscriptions table to track user subscriptions
+export const subscriptions = pgTable("subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  planId: integer("plan_id").notNull().references(() => subscriptionPlans.id),
+  status: text("status").notNull(), // active, cancelled, expired
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"),
+  cancelledAt: timestamp("cancelled_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -200,3 +226,14 @@ export const insertSupportMessageSchema = createInsertSchema(supportMessages);
 export const selectSupportMessageSchema = createSelectSchema(supportMessages);
 export type InsertSupportMessage = typeof supportMessages.$inferInsert;
 export type SelectSupportMessage = typeof supportMessages.$inferSelect;
+
+// Add new schemas for subscription-related tables
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans);
+export const selectSubscriptionPlanSchema = createSelectSchema(subscriptionPlans);
+export type InsertSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
+export type SelectSubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+
+export const insertSubscriptionSchema = createInsertSchema(subscriptions);
+export const selectSubscriptionSchema = createSelectSchema(subscriptions);
+export type InsertSubscription = typeof subscriptions.$inferInsert;
+export type SelectSubscription = typeof subscriptions.$inferSelect;

@@ -2,13 +2,14 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { db } from "@db";
-import { entries, affirmations, achievements, userAchievements, users, wellnessGoals, goalProgress, dailyChallenges, supportTopics, supportGroups, groupMemberships, supportMessages } from "@db/schema";
+import { entries, affirmations, achievements, userAchievements, users, wellnessGoals, goalProgress, dailyChallenges, supportTopics, supportGroups, groupMemberships, supportMessages, subscriptionPlans } from "@db/schema";
 import { eq, desc, and, gte } from "drizzle-orm"; // Import gte operator
 import { generateAffirmation, analyzeSentiment, generateDailyChallenge, getFocusMotivation, analyzeEmotionalIntelligence, analyzeChatSentiment } from "./openai";
 import type { SelectUser } from "@db/schema";
 import fs from "fs/promises";
 import path from "path";
 import { randomBytes } from "crypto";
+import { initializeSubscriptionPlans, checkAIRequestLimit, checkGroupLimit } from "./subscription";
 
 // Extend Express.User type
 declare global {
@@ -121,6 +122,15 @@ async function updateStreakAndCheckAchievements(userId: number) {
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
   initializeAchievements();
+  initializeSubscriptionPlans();
+
+  // New subscription routes
+  app.get("/api/subscription/plans", async (req, res) => {
+    const plans = await db.query.subscriptionPlans.findMany({
+      orderBy: [subscriptionPlans.price],
+    });
+    res.json(plans);
+  });
 
   // Middleware to check if user is authenticated
   const requireAuth = (req: any, res: any, next: any) => {
@@ -141,6 +151,11 @@ export function registerRoutes(app: Express): Server {
 
   // Create a new entry
   app.post("/api/entries", requireAuth, async (req, res) => {
+    const canUseAI = await checkAIRequestLimit(req.user!);
+    if (!canUseAI) {
+      return res.status(402).send("AI request limit reached. Please upgrade to Premium for unlimited AI features.");
+    }
+
     const analysis = await analyzeSentiment(req.body.content);
     const [entry] = await db.insert(entries).values({
       ...req.body,
@@ -521,6 +536,11 @@ export function registerRoutes(app: Express): Server {
   // Join a support group
   app.post("/api/support-groups/:id/join", requireAuth, async (req, res) => {
     try {
+      const canJoinGroup = await checkGroupLimit(req.user!);
+      if (!canJoinGroup) {
+        return res.status(402).send("Group limit reached. Please upgrade to Premium for unlimited groups.");
+      }
+
       const groupId = parseInt(req.params.id);
 
       // Check if user is already a member
