@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { AnimatedContainer } from "@/components/ui/animated-container";
 import { motion } from "framer-motion";
+import ShareDialog from "@/components/ShareDialog";
 
 export default function Home() {
   const { entries, todayAffirmation } = useJournal();
@@ -115,15 +116,21 @@ export default function Home() {
                                   <p className="text-sm text-muted-foreground">
                                     {new Date(entry.createdAt).toLocaleDateString()}
                                   </p>
-                                  {entry.analysis && (
-                                    <div className="flex items-center gap-2">
-                                      <TrendingUp className="h-4 w-4 text-primary" />
-                                      <Progress
-                                        value={(entry.analysis.sentiment.score / 5) * 100}
-                                        className="h-2 w-16"
-                                      />
-                                    </div>
-                                  )}
+                                  <div className="flex items-center gap-2">
+                                    {entry.analysis && (
+                                      <div className="flex items-center gap-2">
+                                        <TrendingUp className="h-4 w-4 text-primary" />
+                                        <Progress
+                                          value={(entry.analysis.sentiment.score / 5) * 100}
+                                          className="h-2 w-16"
+                                        />
+                                      </div>
+                                    )}
+                                    <ShareDialog
+                                      title="Journal Insight"
+                                      text={`Check out my mindfulness journey: ${entry.content.slice(0, 100)}...`}
+                                    />
+                                  </div>
                                 </div>
                                 <p className="line-clamp-2">{entry.content}</p>
                                 <div className="flex gap-2 mt-2">
