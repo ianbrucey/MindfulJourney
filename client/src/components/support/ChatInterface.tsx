@@ -31,9 +31,10 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // Update polling interval to 3 seconds for better real-time feel
   const { data: messages = [], isLoading: messagesLoading } = useQuery<SelectSupportMessage[]>({
     queryKey: [`/api/support-groups/${group.id}/messages`],
-    refetchInterval: 5000, // Poll every 5 seconds
+    refetchInterval: 3000,
   });
 
   const { data: memberships = [], isLoading: membershipsLoading } = useQuery<SelectGroupMembership[]>({
@@ -49,6 +50,7 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
       const response = await fetch(`/api/support-groups/${group.id}/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -66,7 +68,7 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
         description: "You have joined the group!",
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message,
@@ -80,6 +82,7 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
       const response = await fetch(`/api/support-groups/${group.id}/invite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -96,7 +99,7 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
         description: "Invite link generated successfully!",
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message,
@@ -110,6 +113,7 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
       const response = await fetch(`/api/support-groups/${group.id}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({ content, isAnonymous }),
       });
 
@@ -125,7 +129,7 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
         queryKey: [`/api/support-groups/${group.id}/messages`],
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message,
@@ -137,7 +141,8 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+      const scrollArea = scrollAreaRef.current;
+      scrollArea.scrollTop = scrollArea.scrollHeight;
     }
   }, [messages]);
 
@@ -155,6 +160,16 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
     });
   };
 
+  // Show loading state
+  if (membershipsLoading) {
+    return (
+      <div className="flex items-center justify-center h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show join interface if not a member
   if (!isMember) {
     return (
       <div className="flex flex-col items-center justify-center h-[400px] space-y-4">
@@ -165,8 +180,17 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
           onClick={() => joinGroupMutation.mutate()}
           disabled={joinGroupMutation.isPending}
         >
-          <UserPlus className="h-4 w-4 mr-2" />
-          Join Group
+          {joinGroupMutation.isPending ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Joining...
+            </>
+          ) : (
+            <>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Join Group
+            </>
+          )}
         </Button>
       </div>
     );
@@ -178,9 +202,22 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
         <div className="p-4 border-b">
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline" onClick={() => generateInviteMutation.mutate()}>
-                <LinkIcon className="h-4 w-4 mr-2" />
-                Generate Invite Link
+              <Button 
+                variant="outline" 
+                onClick={() => generateInviteMutation.mutate()}
+                disabled={generateInviteMutation.isPending}
+              >
+                {generateInviteMutation.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <LinkIcon className="h-4 w-4 mr-2" />
+                    Generate Invite Link
+                  </>
+                )}
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -199,24 +236,33 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
       )}
 
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className="mb-4 p-3 rounded-lg bg-accent/50"
-          >
-            <div className="flex items-center gap-2 mb-1 text-sm text-muted-foreground">
-              <MessageCircle className="h-4 w-4" />
-              <span>{msg.isAnonymous ? "Anonymous" : "Member"}</span>
-              <span>•</span>
-              <span>
-                {formatDistanceToNow(new Date(msg.createdAt), {
-                  addSuffix: true,
-                })}
-              </span>
-            </div>
-            <p className="text-foreground">{msg.content}</p>
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+            <MessageCircle className="h-8 w-8 mb-2" />
+            <p>No messages yet. Be the first to start the conversation!</p>
           </div>
-        ))}
+        ) : (
+          messages.map((msg) => (
+            <div
+              key={msg.id}
+              className="mb-4 p-3 rounded-lg bg-accent/50"
+            >
+              <div className="flex items-center gap-2 mb-1 text-sm text-muted-foreground">
+                <MessageCircle className="h-4 w-4" />
+                <span>{msg.isAnonymous ? "Anonymous" : "Member"}</span>
+                <span>•</span>
+                <span>
+                  {formatDistanceToNow(new Date(msg.createdAt), {
+                    addSuffix: true,
+                  })}
+                </span>
+              </div>
+              <p className="text-foreground whitespace-pre-wrap break-words">
+                {msg.content}
+              </p>
+            </div>
+          ))
+        )}
       </ScrollArea>
 
       <form onSubmit={handleSend} className="p-4 border-t space-y-4">
@@ -241,7 +287,14 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
             className="px-8"
             disabled={sendMessageMutation.isPending}
           >
-            Send
+            {sendMessageMutation.isPending ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Sending...
+              </>
+            ) : (
+              'Send'
+            )}
           </Button>
         </div>
       </form>
