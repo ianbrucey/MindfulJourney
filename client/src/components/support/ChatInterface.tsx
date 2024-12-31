@@ -9,8 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
-import type { SelectSupportMessage, SelectSupportGroup } from "@db/schema";
-import { MessageCircle } from "lucide-react";
+import type { SelectSupportMessage, SelectSupportGroup, SelectGroupMembership } from "@db/schema";
+import { MessageCircle, UserPlus } from "lucide-react";
 
 interface ChatInterfaceProps {
   group: SelectSupportGroup;
@@ -23,9 +23,46 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: messages = [], isLoading } = useQuery<SelectSupportMessage[]>({
+  const { data: messages = [], isLoading: messagesLoading } = useQuery<SelectSupportMessage[]>({
     queryKey: [`/api/support-groups/${group.id}/messages`],
     refetchInterval: 5000, // Poll every 5 seconds
+  });
+
+  const { data: memberships = [], isLoading: membershipsLoading } = useQuery<SelectGroupMembership[]>({
+    queryKey: ["/api/support-groups/memberships"],
+  });
+
+  const isMember = memberships.some(m => m.groupId === group.id);
+
+  const joinGroupMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/support-groups/${group.id}/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/support-groups/memberships"] 
+      });
+      toast({
+        title: "Success",
+        description: "You have joined the group!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const sendMessageMutation = useMutation({
@@ -69,6 +106,23 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
     if (!message.trim()) return;
     await sendMessageMutation.mutate(message);
   };
+
+  if (!isMember) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[400px] space-y-4">
+        <p className="text-muted-foreground">
+          You need to join this group to participate in the discussion.
+        </p>
+        <Button
+          onClick={() => joinGroupMutation.mutate()}
+          disabled={joinGroupMutation.isPending}
+        >
+          <UserPlus className="h-4 w-4 mr-2" />
+          Join Group
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[600px]">
