@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -105,7 +106,7 @@ export default function GuidedMeditation() {
       } else {
         setProgress(newProgress);
 
-        if (currentType.id === "body-scan") {
+        if (currentType.id === "body-scan" && currentType.instructions) {
           const stepDuration = currentType.duration / currentType.instructions.length;
           const currentStepIndex = Math.floor(elapsed / 1000 / stepDuration);
           if (currentStepIndex !== currentStep) {
@@ -119,7 +120,7 @@ export default function GuidedMeditation() {
     }, 100);
 
     // Set up the breathing phase timer if in breathing mode
-    if (currentType.id === "breathing") {
+    if (currentType.id === "breathing" && currentType.pattern) {
       const breathingCycle = currentType.pattern;
       const cycleDuration = 
         (breathingCycle.inhale + breathingCycle.hold + 
@@ -236,7 +237,8 @@ export default function GuidedMeditation() {
                       scale: [1, 1.2, 1.2, 1, 1],
                     }}
                     transition={{
-                      duration: currentType.pattern.inhale + currentType.pattern.hold + currentType.pattern.exhale + currentType.pattern.rest,
+                      duration: currentType.pattern?.inhale + currentType.pattern?.hold + 
+                               currentType.pattern?.exhale + currentType.pattern?.rest,
                       repeat: Infinity,
                       times: [0, 0.25, 0.5, 0.75, 1],
                     }}
@@ -248,7 +250,7 @@ export default function GuidedMeditation() {
                 </div>
               ) : (
                 <p className="text-lg font-medium text-center">
-                  {currentType.instructions[currentStep]}
+                  {currentType.instructions?.[currentStep]}
                 </p>
               )}
             </motion.div>
