@@ -9,7 +9,7 @@ import AffirmationCard from "@/components/AffirmationCard";
 import StreakCounter from "@/components/StreakCounter";
 import AchievementsList from "@/components/AchievementsList";
 import DailyChallenge from "@/components/DailyChallenge";
-import AmbientSoundGenerator from "@/components/AmbientSoundGenerator";
+import AmbientSoundLibrary from "@/components/AmbientSoundLibrary";
 import ThemeSelector from "@/components/ThemeSelector";
 import EmotionMap from "@/components/EmotionMap";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -18,7 +18,7 @@ import { AnimatedContainer } from "@/components/ui/animated-container";
 import { motion } from "framer-motion";
 import ShareDialog from "@/components/ShareDialog";
 import GuidedMeditation from "@/components/GuidedMeditation";
-import AmbientSoundLibrary from "@/components/AmbientSoundLibrary";
+import MusicPlaylistGenerator from "@/components/MusicPlaylistGenerator";
 
 export default function Home() {
   const { entries, todayAffirmation } = useJournal();
@@ -61,14 +61,11 @@ export default function Home() {
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.6}>
-            <ThemeSelector />
+            <MusicPlaylistGenerator />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.7}>
-            <StreakCounter
-              currentStreak={user?.currentStreak || 0}
-              longestStreak={user?.longestStreak || 0}
-            />
+            <ThemeSelector />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.8}>
