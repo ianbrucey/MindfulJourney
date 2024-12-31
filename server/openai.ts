@@ -28,3 +28,51 @@ export async function generateAffirmation(): Promise<string> {
     return "I am worthy of peace and happiness.";
   }
 }
+
+export async function analyzeSentiment(content: string): Promise<{
+  sentiment: {
+    score: number;
+    label: string;
+  };
+  themes: string[];
+  insights: string;
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are an empathetic AI therapist analyzing journal entries. 
+          Analyze the sentiment, emotional themes, and provide personalized insights.
+          Respond with a JSON object containing:
+          - sentiment: { score (1-5, where 1 is very negative and 5 is very positive), label (descriptive word) }
+          - themes: array of emotional themes present
+          - insights: a brief, personalized insight about the entry`,
+        },
+        {
+          role: "user",
+          content,
+        },
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const analysis = JSON.parse(response.choices[0].message.content);
+    return {
+      sentiment: {
+        score: Math.max(1, Math.min(5, analysis.sentiment.score)),
+        label: analysis.sentiment.label,
+      },
+      themes: analysis.themes,
+      insights: analysis.insights,
+    };
+  } catch (error) {
+    console.error("Error analyzing sentiment:", error);
+    return {
+      sentiment: { score: 3, label: "neutral" },
+      themes: [],
+      insights: "Unable to analyze the entry at this time.",
+    };
+  }
+}

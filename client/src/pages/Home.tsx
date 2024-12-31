@@ -2,9 +2,10 @@ import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useJournal } from "@/hooks/use-journal";
-import { PenSquare, Calendar } from "lucide-react";
+import { PenSquare, Calendar, TrendingUp } from "lucide-react";
 import AffirmationCard from "@/components/AffirmationCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 
 export default function Home() {
   const { entries, todayAffirmation } = useJournal();
@@ -16,7 +17,7 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-foreground/90 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             Mindful Journal
           </h1>
-          
+
           <AffirmationCard affirmation={todayAffirmation} />
 
           <Card>
@@ -48,9 +49,20 @@ export default function Home() {
                   <Link key={entry.id} href={`/entry/${entry.id}`}>
                     <Card className="cursor-pointer hover:bg-accent transition-colors">
                       <CardContent className="p-4">
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(entry.createdAt).toLocaleDateString()}
-                        </p>
+                        <div className="flex justify-between items-start mb-2">
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(entry.createdAt).toLocaleDateString()}
+                          </p>
+                          {entry.analysis && (
+                            <div className="flex items-center gap-2">
+                              <TrendingUp className="h-4 w-4 text-primary" />
+                              <Progress
+                                value={(entry.analysis.sentiment.score / 5) * 100}
+                                className="h-2 w-16"
+                              />
+                            </div>
+                          )}
+                        </div>
                         <p className="line-clamp-2">{entry.content}</p>
                         <div className="flex gap-2 mt-2">
                           {entry.tags?.map((tag) => (

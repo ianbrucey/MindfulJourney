@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, json } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 export const users = pgTable("users", {
@@ -15,6 +15,11 @@ export const entries = pgTable("entries", {
   content: text("content").notNull(),
   mood: integer("mood").notNull(), // 1-5 scale
   tags: text("tags").array(),
+  analysis: json("analysis").$type<{
+    sentiment: { score: number; label: string };
+    themes: string[];
+    insights: string;
+  }>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

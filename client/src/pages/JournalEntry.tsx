@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import JournalForm from "@/components/JournalForm";
+import SentimentAnalysis from "@/components/SentimentAnalysis";
 import { useJournal } from "@/hooks/use-journal";
 
 export default function JournalEntry() {
@@ -22,16 +23,22 @@ export default function JournalEntry() {
         Back to Journal
       </Button>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {id ? "Edit Journal Entry" : "New Journal Entry"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <JournalForm entry={entry} />
-        </CardContent>
-      </Card>
+      <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {id ? "Edit Journal Entry" : "New Journal Entry"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <JournalForm entry={entry} />
+          </CardContent>
+        </Card>
+
+        {entry && entry.analysis && (
+          <SentimentAnalysis entry={entry} />
+        )}
+      </div>
     </div>
   );
 }

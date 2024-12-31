@@ -4,7 +4,7 @@ import { setupAuth } from "./auth";
 import { db } from "@db";
 import { entries, affirmations } from "@db/schema";
 import { eq } from "drizzle-orm";
-import { generateAffirmation } from "./openai";
+import { generateAffirmation, analyzeSentiment } from "./openai";
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
@@ -28,17 +28,20 @@ export function registerRoutes(app: Express): Server {
 
   // Create a new entry
   app.post("/api/entries", requireAuth, async (req, res) => {
+    const analysis = await analyzeSentiment(req.body.content);
     const entry = await db.insert(entries).values({
       ...req.body,
       userId: req.user!.id,
+      analysis,
     }).returning();
     res.json(entry[0]);
   });
 
   // Update an entry
   app.put("/api/entries/:id", requireAuth, async (req, res) => {
+    const analysis = await analyzeSentiment(req.body.content);
     const entry = await db.update(entries)
-      .set(req.body)
+      .set({ ...req.body, analysis })
       .where(eq(entries.id, parseInt(req.params.id)))
       .returning();
     res.json(entry[0]);
