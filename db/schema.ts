@@ -5,9 +5,9 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").unique().notNull(),
   password: text("password").notNull(),
-  email: text("email").unique(), // Allow NULL initially
-  firstName: text("first_name"), // Allow NULL initially
-  lastName: text("last_name"), // Allow NULL initially
+  email: text("email").unique().notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
   stripeCustomerId: text("stripe_customer_id").unique(),
   emailNotifications: boolean("email_notifications").default(false),
   currentStreak: integer("current_streak").default(0),
@@ -15,7 +15,7 @@ export const users = pgTable("users", {
   lastEntryDate: timestamp("last_entry_date"),
   subscriptionTier: text("subscription_tier").default('basic'),
   aiRequestsCount: integer("ai_requests_count").default(0),
-  ai_requests_reset_date: timestamp("ai_requests_reset_date"),
+  aiRequestsResetDate: timestamp("ai_requests_reset_date"),
 });
 
 export const entries = pgTable("entries", {
