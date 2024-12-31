@@ -78,7 +78,7 @@ export default function ThemeSelector() {
               <Button
                 key={theme.id}
                 variant="outline"
-                className="flex flex-col items-center gap-2 h-auto p-4 hover:bg-accent transition-colors"
+                className="flex flex-col items-center gap-2 h-auto p-4 hover:bg-accent transition-colors min-h-[160px]"
                 onClick={() => {
                   setTheme({
                     primary: theme.primary,
@@ -89,8 +89,8 @@ export default function ThemeSelector() {
                 }}
               >
                 <Icon className="h-8 w-8" style={{ color: theme.primary }} />
-                <span className="text-sm font-medium">{theme.name}</span>
-                <span className="text-xs text-muted-foreground text-center">
+                <span className="text-sm font-medium line-clamp-1">{theme.name}</span>
+                <span className="text-xs text-muted-foreground text-center line-clamp-2">
                   {theme.description}
                 </span>
               </Button>
