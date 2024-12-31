@@ -5,7 +5,9 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").unique().notNull(),
   password: text("password").notNull(),
-  email: text("email").unique(),
+  email: text("email").unique(), // Allow NULL initially
+  firstName: text("first_name"), // Allow NULL initially
+  lastName: text("last_name"), // Allow NULL initially
   stripeCustomerId: text("stripe_customer_id").unique(),
   emailNotifications: boolean("email_notifications").default(false),
   currentStreak: integer("current_streak").default(0),
@@ -110,7 +112,7 @@ export const subscriptions = pgTable("subscriptions", {
   userId: integer("user_id").notNull().references(() => users.id),
   planId: integer("plan_id").notNull().references(() => subscriptionPlans.id),
   stripeSubscriptionId: text("stripe_subscription_id").unique(),
-  status: text("status").notNull(), 
+  status: text("status").notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date"),
   cancelledAt: timestamp("cancelled_at"),

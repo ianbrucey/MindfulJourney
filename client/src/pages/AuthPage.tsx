@@ -13,14 +13,17 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/use-user";
-import { Loader2 } from "lucide-react";
+import { Loader2, Brain } from "lucide-react";
 
 const formSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Invalid email address"),
+  firstName: z.string().min(2, "First name is required"),
+  lastName: z.string().min(2, "Last name is required"),
 });
 
 type AuthPageProps = {
@@ -39,6 +42,9 @@ export default function AuthPage({ returnTo }: AuthPageProps) {
     defaultValues: {
       username: "",
       password: "",
+      email: "",
+      firstName: "",
+      lastName: "",
     },
   });
 
@@ -81,14 +87,18 @@ export default function AuthPage({ returnTo }: AuthPageProps) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md mx-4">
-        <CardHeader>
-          <CardTitle className="text-center">
-            {isLogin ? "Welcome Back" : "Create Account"}
-          </CardTitle>
+        <CardHeader className="text-center space-y-2">
+          <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <Brain className="w-6 h-6 text-primary" />
+          </div>
+          <CardTitle className="text-2xl font-bold">MindfulJourney</CardTitle>
+          <CardDescription>
+            Your companion for mental wellness and productivity
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="username"
@@ -102,6 +112,54 @@ export default function AuthPage({ returnTo }: AuthPageProps) {
                   </FormItem>
                 )}
               />
+
+              {!isLogin && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="Enter your email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="First name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Last name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </>
+              )}
 
               <FormField
                 control={form.control}
@@ -122,9 +180,7 @@ export default function AuthPage({ returnTo }: AuthPageProps) {
               />
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : null}
+                {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {isLogin ? "Login" : "Register"}
               </Button>
             </form>
@@ -134,7 +190,10 @@ export default function AuthPage({ returnTo }: AuthPageProps) {
             <Button
               variant="ghost"
               className="text-sm"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                setIsLogin(!isLogin);
+                form.reset();
+              }}
               disabled={isLoading}
             >
               {isLogin
