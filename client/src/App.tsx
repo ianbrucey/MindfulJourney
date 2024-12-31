@@ -1,11 +1,11 @@
 import { Switch, Route } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { useUser } from "./hooks/use-user";
-import Home from "./pages/Home";
-import JournalEntry from "./pages/JournalEntry";
-import WellnessGoals from "./pages/WellnessGoals";
-import AuthPage from "./pages/AuthPage";
+import { useUser } from "@/hooks/use-user";
+import Home from "@/pages/Home";
+import JournalEntry from "@/pages/JournalEntry";
+import WellnessGoals from "@/pages/WellnessGoals";
+import AuthPage from "@/pages/AuthPage";
 import { Toaster } from "@/components/ui/toaster";
 
 function App() {
