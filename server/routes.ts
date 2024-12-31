@@ -6,6 +6,8 @@ import { entries, affirmations, achievements, userAchievements, users, wellnessG
 import { eq, desc, and, gte, lte } from "drizzle-orm";
 import { generateAffirmation, analyzeSentiment, generateDailyChallenge } from "./openai.js";
 import type { SelectUser } from "@db/schema";
+import fs from "fs/promises";
+import path from "path";
 
 // Extend Express.User type
 declare global {
@@ -366,6 +368,19 @@ export function registerRoutes(app: Express): Server {
     });
 
     res.json(challenges);
+  });
+
+  // Theme customization endpoint
+  app.post("/api/theme", async (req, res) => {
+    try {
+      const theme = req.body;
+      const themeFilePath = path.resolve(process.cwd(), "theme.json");
+      await fs.writeFile(themeFilePath, JSON.stringify(theme, null, 2));
+      res.json({ message: "Theme updated successfully" });
+    } catch (error) {
+      console.error("Error updating theme:", error);
+      res.status(500).send("Failed to update theme");
+    }
   });
 
   const httpServer = createServer(app);
