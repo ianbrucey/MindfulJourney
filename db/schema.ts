@@ -130,3 +130,69 @@ export const insertGoalProgressSchema = createInsertSchema(goalProgress);
 export const selectGoalProgressSchema = createSelectSchema(goalProgress);
 export type InsertGoalProgress = typeof goalProgress.$inferInsert;
 export type SelectGoalProgress = typeof goalProgress.$inferSelect;
+
+// New tables for social support network
+export const supportGroups = pgTable("support_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  topicId: integer("topic_id").references(() => supportTopics.id),
+  isPrivate: boolean("is_private").default(false),
+  maxMembers: integer("max_members").default(50),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const supportTopics = pgTable("support_topics", {
+  id: serial("id").primaryKey(),
+  name: text("name").unique().notNull(),
+  description: text("description"),
+  icon: text("icon"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const groupMemberships = pgTable("group_memberships", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  groupId: integer("group_id").notNull().references(() => supportGroups.id),
+  anonymousName: text("anonymous_name").notNull(),
+  isAdmin: boolean("is_admin").default(false),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  lastActive: timestamp("last_active"),
+});
+
+export const supportMessages = pgTable("support_messages", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull().references(() => supportGroups.id),
+  membershipId: integer("membership_id").notNull().references(() => groupMemberships.id),
+  content: text("content").notNull(),
+  attachmentUrl: text("attachment_url"),
+  isAnonymous: boolean("is_anonymous").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  editedAt: timestamp("edited_at"),
+  sentiment: json("sentiment").$type<{
+    score: number;
+    tone: string;
+  }>(),
+});
+
+// Add schemas and types for new tables
+export const insertSupportGroupSchema = createInsertSchema(supportGroups);
+export const selectSupportGroupSchema = createSelectSchema(supportGroups);
+export type InsertSupportGroup = typeof supportGroups.$inferInsert;
+export type SelectSupportGroup = typeof supportGroups.$inferSelect;
+
+export const insertSupportTopicSchema = createInsertSchema(supportTopics);
+export const selectSupportTopicSchema = createSelectSchema(supportTopics);
+export type InsertSupportTopic = typeof supportTopics.$inferInsert;
+export type SelectSupportTopic = typeof supportTopics.$inferSelect;
+
+export const insertGroupMembershipSchema = createInsertSchema(groupMemberships);
+export const selectGroupMembershipSchema = createSelectSchema(groupMemberships);
+export type InsertGroupMembership = typeof groupMemberships.$inferInsert;
+export type SelectGroupMembership = typeof groupMemberships.$inferSelect;
+
+export const insertSupportMessageSchema = createInsertSchema(supportMessages);
+export const selectSupportMessageSchema = createSelectSchema(supportMessages);
+export type InsertSupportMessage = typeof supportMessages.$inferInsert;
+export type SelectSupportMessage = typeof supportMessages.$inferSelect;

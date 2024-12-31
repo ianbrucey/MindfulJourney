@@ -11,6 +11,7 @@ import ProductivityPage from "@/pages/ProductivityPage";
 import SettingsPage from "@/pages/SettingsPage";
 import TalkItOutPage from "@/pages/TalkItOutPage";
 import MiniGamesPage from "@/pages/MiniGamesPage";
+import SupportNetworkPage from "@/pages/SupportNetworkPage";
 import Navigation from "@/components/Navigation";
 import { Toaster } from "@/components/ui/toaster";
 import { AiAssistantProvider } from "@sista/ai-assistant-react";
@@ -18,9 +19,6 @@ import { AiAssistantProvider } from "@sista/ai-assistant-react";
 function App() {
   const { user, isLoading } = useUser();
   const apiKey = import.meta.env.VITE_SISTA_AI_SECRET;
-
-  // Debug log to check if we can access the API key
-  console.log('Sista AI Key available:', !!apiKey);
 
   if (isLoading) {
     return (
@@ -65,6 +63,7 @@ function App() {
             <Route path="/productivity" component={ProductivityPage} />
             <Route path="/talk" component={TalkItOutPage} />
             <Route path="/games" component={MiniGamesPage} />
+            <Route path="/support" component={SupportNetworkPage} />
             <Route path="/settings" component={SettingsPage} />
             <Route component={NotFound} />
           </Switch>
@@ -75,7 +74,6 @@ function App() {
   );
 }
 
-// fallback 404 not found page
 function NotFound() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
