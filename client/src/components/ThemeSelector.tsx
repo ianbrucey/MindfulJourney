@@ -15,7 +15,7 @@ const themes = [
     id: "default",
     name: "Default Theme",
     icon: RotateCcw,
-    primary: "hsl(222.2 47.4% 11.2%)",
+    primary: "hsl(262, 83%, 58%)",
     variant: "professional",
   },
   {
