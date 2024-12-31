@@ -9,7 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Play, Pause, Brain, Wind } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Loader2, Play, Pause, Brain, Wind, Volume2, Waves, TreePine } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Howl } from "howler";
 import * as Tone from "tone";
@@ -49,17 +50,27 @@ const meditationTypes = [
   },
 ];
 
+const soundTypes = [
+  { id: "pink", name: "Pink Noise", icon: Wind },
+  { id: "waves", name: "Ocean Waves", icon: Waves },
+  { id: "forest", name: "Forest Birds", icon: TreePine },
+];
+
 export default function GuidedMeditation() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentType, setCurrentType] = useState(meditationTypes[0]);
   const [currentStep, setCurrentStep] = useState(0);
   const [breathPhase, setBreathPhase] = useState(0);
+  const [currentSound, setCurrentSound] = useState(soundTypes[0]);
+  const [volume, setVolume] = useState(30);
+
   const timerRef = useRef<NodeJS.Timeout>();
   const startTimeRef = useRef<number>();
   const phaseTimerRef = useRef<NodeJS.Timeout>();
   const [noise, setNoise] = useState<Tone.Noise | null>(null);
-  const [volume, setVolume] = useState(30);
+  const [filter, setFilter] = useState<Tone.Filter | null>(null);
+  const [lfo, setLfo] = useState<Tone.LFO | null>(null);
 
   const bells = useRef<Howl>(new Howl({
     src: ['/meditation-bell.mp3'],
@@ -67,17 +78,39 @@ export default function GuidedMeditation() {
   }));
 
   useEffect(() => {
+    // Create the noise generator and filter chain
     const newNoise = new Tone.Noise({
-      type: "pink",
+      type: currentSound.id === "pink" ? "pink" : "brown",
       volume: Tone.gainToDb(volume / 100),
-    }).toDestination();
+    });
+
+    const newFilter = new Tone.Filter({
+      frequency: 800,
+      type: "lowpass",
+      rolloff: -24,
+    });
+
+    const newLfo = new Tone.LFO({
+      frequency: currentSound.id === "waves" ? 0.1 : 0.5,
+      min: 400,
+      max: 1200,
+    });
+
+    // Connect the audio chain
+    newNoise.connect(newFilter);
+    newFilter.toDestination();
+    newLfo.connect(newFilter.frequency);
 
     setNoise(newNoise);
+    setFilter(newFilter);
+    setLfo(newLfo);
 
     return () => {
       newNoise.dispose();
+      newFilter.dispose();
+      newLfo.dispose();
     };
-  }, []);
+  }, [currentSound]);
 
   useEffect(() => {
     if (noise) {
@@ -86,11 +119,12 @@ export default function GuidedMeditation() {
   }, [volume, noise]);
 
   const startMeditation = async () => {
-    if (!noise) return;
+    if (!noise || !lfo) return;
 
     await Tone.start();
     bells.current.play();
     noise.start();
+    lfo.start();
 
     setIsPlaying(true);
     setBreathPhase(0);
@@ -135,6 +169,9 @@ export default function GuidedMeditation() {
   const stopMeditation = () => {
     if (noise) {
       noise.stop();
+    }
+    if (lfo) {
+      lfo.stop();
     }
     bells.current.play();
     setIsPlaying(false);
@@ -214,6 +251,51 @@ export default function GuidedMeditation() {
           </p>
         </div>
 
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Background Sound</label>
+          <Select
+            value={currentSound.id}
+            onValueChange={(value) => {
+              const newSound = soundTypes.find((s) => s.id === value);
+              if (newSound) {
+                setCurrentSound(newSound);
+              }
+            }}
+            disabled={isPlaying}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select background sound" />
+            </SelectTrigger>
+            <SelectContent>
+              {soundTypes.map((sound) => {
+                const Icon = sound.icon;
+                return (
+                  <SelectItem key={sound.id} value={sound.id}>
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4" />
+                      {sound.name}
+                    </div>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Volume2 className="h-4 w-4" />
+            <label className="text-sm font-medium">Volume</label>
+          </div>
+          <Slider
+            value={[volume]}
+            onValueChange={([value]) => setVolume(value)}
+            max={100}
+            step={1}
+            className="w-full"
+          />
+        </div>
+
         <div className="space-y-4">
           <div className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground">Progress</span>
@@ -234,13 +316,14 @@ export default function GuidedMeditation() {
                 <div className="flex flex-col items-center">
                   <motion.div
                     animate={{
-                      scale: [1, 1.2, 1.2, 1, 1],
+                      scale: breathPhase === 0 ? [1, 1.5] : 
+                             breathPhase === 1 ? 1.5 :
+                             breathPhase === 2 ? [1.5, 1] : 1,
                     }}
                     transition={{
-                      duration: currentType.pattern?.inhale + currentType.pattern?.hold + 
-                               currentType.pattern?.exhale + currentType.pattern?.rest,
-                      repeat: Infinity,
-                      times: [0, 0.25, 0.5, 0.75, 1],
+                      duration: (currentType.pattern?.inhale || 0) + (currentType.pattern?.hold || 0) + 
+                               (currentType.pattern?.exhale || 0) + (currentType.pattern?.rest || 0),
+                      ease: "easeInOut",
                     }}
                     className="w-16 h-16 rounded-full bg-primary/20 mb-4"
                   />
