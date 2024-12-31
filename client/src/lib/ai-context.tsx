@@ -9,7 +9,7 @@ interface AiAssistantContextType {
 
 const AiAssistantContext = createContext<AiAssistantContextType | null>(null);
 
-// The newest OpenAI model is "gpt-4o" which was released May 13, 2024
+// the newest OpenAI model is "gpt-4o" which was released May 13, 2024
 const OPENAI_MODEL = "gpt-4o";
 
 export function AiAssistantProvider({ children }: { children: ReactNode }) {
@@ -39,6 +39,7 @@ export function AiAssistantProvider({ children }: { children: ReactNode }) {
 
       return response.choices[0].message.content || "I apologize, but I couldn't generate a response. Please try again.";
     } catch (error: any) {
+      console.error('AI Assistant Error:', error);
       toast({
         title: "Error",
         description: "Failed to get response from AI assistant. Please try again.",
@@ -50,8 +51,13 @@ export function AiAssistantProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const value = {
+    sendMessage,
+    isLoading
+  };
+
   return (
-    <AiAssistantContext.Provider value={{ sendMessage, isLoading }}>
+    <AiAssistantContext.Provider value={value}>
       {children}
     </AiAssistantContext.Provider>
   );
