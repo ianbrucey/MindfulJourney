@@ -93,7 +93,8 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const { username, password, email } = req.body;
+      const { username, password } = req.body;
+      const returnTo = req.session.returnTo || '/';
 
       const [existingUser] = await db
         .select()
@@ -112,7 +113,6 @@ export function setupAuth(app: Express) {
         .values({
           username,
           password: hashedPassword,
-          email,
         })
         .returning();
 
@@ -120,7 +120,9 @@ export function setupAuth(app: Express) {
         if (err) {
           return next(err);
         }
-        return res.json(newUser);
+        // Clear the returnTo from session after use
+        delete req.session.returnTo;
+        return res.json({ redirectTo: returnTo });
       });
     } catch (error) {
       next(error);
@@ -139,9 +141,19 @@ export function setupAuth(app: Express) {
         if (err) {
           return next(err);
         }
-        return res.json(user);
+        const returnTo = req.session.returnTo || '/';
+        delete req.session.returnTo;
+        return res.json({ redirectTo: returnTo });
       });
     })(req, res, next);
+  });
+
+  // New middleware to capture return URL
+  app.use((req, res, next) => {
+    if (!req.isAuthenticated() && req.path.startsWith('/join/')) {
+      req.session.returnTo = req.originalUrl;
+    }
+    next();
   });
 
   app.post("/api/logout", (req, res) => {

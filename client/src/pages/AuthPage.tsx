@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useLocation } from "wouter";
 import {
   Form,
   FormControl,
@@ -25,6 +26,7 @@ export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const { toast } = useToast();
   const { login, register } = useUser();
+  const [, setLocation] = useLocation();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -51,6 +53,8 @@ export default function AuthPage() {
           ? "Successfully logged in"
           : "Your account has been created successfully",
       });
+      // Use the redirectTo URL from the server response
+      setLocation(result.redirectTo || '/');
     } catch (error: any) {
       toast({
         title: "Error",

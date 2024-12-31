@@ -12,6 +12,7 @@ import SettingsPage from "@/pages/SettingsPage";
 import TalkItOutPage from "@/pages/TalkItOutPage";
 import MiniGamesPage from "@/pages/MiniGamesPage";
 import SupportNetworkPage from "@/pages/SupportNetworkPage";
+import JoinGroupPage from "@/pages/JoinGroupPage";
 import Navigation from "@/components/Navigation";
 import { Toaster } from "@/components/ui/toaster";
 import { AiAssistantProvider } from "@sista/ai-assistant-react";
@@ -26,6 +27,13 @@ function App() {
         <Loader2 className="h-8 w-8 animate-spin text-border" />
       </div>
     );
+  }
+
+  // Special case: Allow join page even when not logged in
+  // It will handle the auth flow internally
+  const path = window.location.pathname;
+  if (path.startsWith('/join/') && !user) {
+    return <JoinGroupPage />;
   }
 
   if (!user) {
@@ -65,6 +73,7 @@ function App() {
             <Route path="/games" component={MiniGamesPage} />
             <Route path="/support" component={SupportNetworkPage} />
             <Route path="/settings" component={SettingsPage} />
+            <Route path="/join/:inviteCode" component={JoinGroupPage} />
             <Route component={NotFound} />
           </Switch>
         </main>
