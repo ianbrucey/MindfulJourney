@@ -134,6 +134,11 @@ async function updateStreakAndCheckAchievements(userId: number) {
 // Modify only the initializeSubscriptionPlans function
 async function initializeSubscriptionPlans() {
   try {
+    // Verify required environment variables
+    if (!process.env.STRIPE_PREMIUM_PRICE_ID || !process.env.STRIPE_PROFESSIONAL_PRICE_ID) {
+      throw new Error('Missing required Stripe price IDs in environment variables');
+    }
+
     // Delete any existing plans to ensure clean state
     await db.delete(subscriptionPlans);
 
@@ -186,6 +191,11 @@ async function initializeSubscriptionPlans() {
         groupLimit: -1
       }
     ]);
+
+    console.log('Successfully initialized subscription plans with the following price IDs:', {
+      premium: process.env.STRIPE_PREMIUM_PRICE_ID,
+      professional: process.env.STRIPE_PROFESSIONAL_PRICE_ID
+    });
   } catch (error) {
     console.error('Error initializing subscription plans:', error);
     throw error;

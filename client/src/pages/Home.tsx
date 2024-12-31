@@ -41,17 +41,6 @@ export default function Home() {
             <AffirmationCard affirmation={todayAffirmation} />
           </AnimatedContainer>
 
-          <AnimatedContainer delay={0.2}>
-            <DailyChallenge />
-          </AnimatedContainer>
-
-          <AnimatedContainer delay={0.4}>
-            <EmotionalIntelligenceCoach />
-          </AnimatedContainer>
-
-          <AnimatedContainer delay={0.5}>
-            <EmotionMap entries={entries || []} />
-          </AnimatedContainer>
           <AnimatedContainer delay={0.1}>
             <Card>
               <CardHeader>
@@ -77,6 +66,19 @@ export default function Home() {
               </CardContent>
             </Card>
           </AnimatedContainer>
+
+          <AnimatedContainer delay={0.2}>
+            <DailyChallenge />
+          </AnimatedContainer>
+
+          <AnimatedContainer delay={0.4}>
+            <EmotionalIntelligenceCoach />
+          </AnimatedContainer>
+
+          <AnimatedContainer delay={0.5}>
+            <EmotionMap entries={entries || []} />
+          </AnimatedContainer>
+          
         </div>
 
         <div className="space-y-6">
