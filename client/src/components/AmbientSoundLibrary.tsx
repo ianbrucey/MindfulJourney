@@ -141,85 +141,137 @@ export default function AmbientSoundLibrary() {
   const filters = useRef<Tone.Filter[]>([]);
   const lfos = useRef<Tone.LFO[]>([]);
   const timerRef = useRef<NodeJS.Timeout>();
+  const audioContextInitialized = useRef(false);
 
-  useEffect(() => {
-    // Cleanup previous sound chain
-    noiseGenerators.current.forEach(noise => noise.dispose());
-    filters.current.forEach(filter => filter.dispose());
-    lfos.current.forEach(lfo => lfo.dispose());
+  // Cleanup function to properly dispose of audio resources
+  const cleanup = () => {
+    noiseGenerators.current.forEach(noise => {
+      try {
+        noise.stop();
+        noise.dispose();
+      } catch (e) {
+        console.error("Error disposing noise:", e);
+      }
+    });
+    filters.current.forEach(filter => {
+      try {
+        filter.dispose();
+      } catch (e) {
+        console.error("Error disposing filter:", e);
+      }
+    });
+    lfos.current.forEach(lfo => {
+      try {
+        lfo.stop();
+        lfo.dispose();
+      } catch (e) {
+        console.error("Error disposing LFO:", e);
+      }
+    });
     noiseGenerators.current = [];
     filters.current = [];
     lfos.current = [];
-
-    // Create layered sound generators for the current preset
-    currentSound.sounds.forEach(sound => {
-      const noise = new Tone.Noise({
-        type: sound.type,
-        volume: Tone.gainToDb(volume / 100) + sound.volume,
-      });
-
-      const filter = new Tone.Filter({
-        frequency: sound.filter.frequency,
-        type: "lowpass",
-        Q: sound.filter.Q,
-      });
-
-      const lfo = new Tone.LFO({
-        frequency: currentSound.lfoSettings.frequency * sound.frequency,
-        min: currentSound.lfoSettings.min,
-        max: currentSound.lfoSettings.max,
-      });
-
-      noise.connect(filter);
-      filter.toDestination();
-      lfo.connect(filter.frequency);
-
-      noiseGenerators.current.push(noise);
-      filters.current.push(filter);
-      lfos.current.push(lfo);
-    });
-
-    return () => {
-      noiseGenerators.current.forEach(noise => noise.dispose());
-      filters.current.forEach(filter => filter.dispose());
-      lfos.current.forEach(lfo => lfo.dispose());
-    };
-  }, [currentSound]);
+  };
 
   useEffect(() => {
-    noiseGenerators.current.forEach((noise, index) => {
-      const baseVolume = currentSound.sounds[index].volume;
-      noise.volume.value = Tone.gainToDb(volume / 100) + baseVolume;
-    });
-  }, [volume, currentSound]);
+    return () => {
+      cleanup();
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
+  const initializeAudioChain = async () => {
+    try {
+      if (!audioContextInitialized.current) {
+        await Tone.start();
+        audioContextInitialized.current = true;
+      }
+
+      cleanup();
+
+      // Create layered sound generators for the current preset
+      for (const sound of currentSound.sounds) {
+        try {
+          const noise = new Tone.Noise({
+            type: sound.type,
+            volume: Tone.gainToDb(volume / 100) + sound.volume,
+          }).toDestination();
+
+          const filter = new Tone.Filter({
+            frequency: sound.filter.frequency,
+            type: "lowpass",
+            Q: sound.filter.Q,
+          }).toDestination();
+
+          const lfo = new Tone.LFO({
+            frequency: currentSound.lfoSettings.frequency * sound.frequency,
+            min: currentSound.lfoSettings.min,
+            max: currentSound.lfoSettings.max,
+          });
+
+          noise.connect(filter);
+          lfo.connect(filter.frequency);
+
+          noiseGenerators.current.push(noise);
+          filters.current.push(filter);
+          lfos.current.push(lfo);
+        } catch (e) {
+          console.error("Error creating audio chain:", e);
+        }
+      }
+    } catch (e) {
+      console.error("Error initializing audio context:", e);
+      throw e;
+    }
+  };
+
+  useEffect(() => {
+    if (isPlaying) {
+      noiseGenerators.current.forEach((noise, index) => {
+        try {
+          const baseVolume = currentSound.sounds[index].volume;
+          noise.volume.value = Tone.gainToDb(volume / 100) + baseVolume;
+        } catch (e) {
+          console.error("Error updating volume:", e);
+        }
+      });
+    }
+  }, [volume, currentSound, isPlaying]);
 
   const toggleSound = async () => {
-    if (!noiseGenerators.current.length) return;
+    try {
+      if (!isPlaying) {
+        await initializeAudioChain();
+        noiseGenerators.current.forEach(noise => noise.start());
+        lfos.current.forEach(lfo => lfo.start());
 
-    if (!isPlaying) {
-      await Tone.start();
-      noiseGenerators.current.forEach(noise => noise.start());
-      lfos.current.forEach(lfo => lfo.start());
-
-      if (duration > 0) {
-        timerRef.current = setTimeout(() => {
-          stopSound();
-        }, duration * 60 * 1000);
+        if (duration > 0) {
+          timerRef.current = setTimeout(() => {
+            stopSound();
+          }, duration * 60 * 1000);
+        }
+        setIsPlaying(true);
+      } else {
+        stopSound();
       }
-    } else {
-      stopSound();
+    } catch (e) {
+      console.error("Error toggling sound:", e);
+      setIsPlaying(false);
     }
-
-    setIsPlaying(!isPlaying);
   };
 
   const stopSound = () => {
-    noiseGenerators.current.forEach(noise => noise.stop());
-    lfos.current.forEach(lfo => lfo.stop());
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
+    try {
+      cleanup();
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      setIsPlaying(false);
+    } catch (e) {
+      console.error("Error stopping sound:", e);
     }
-    setIsPlaying(false);
   };
 
   return (
