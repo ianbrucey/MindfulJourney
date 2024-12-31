@@ -19,6 +19,7 @@ import { motion } from "framer-motion";
 import ShareDialog from "@/components/ShareDialog";
 import GuidedMeditation from "@/components/GuidedMeditation";
 import MusicPlaylistGenerator from "@/components/MusicPlaylistGenerator";
+import DeepWorkGuide from "@/components/DeepWorkGuide";
 
 export default function Home() {
   const { entries, todayAffirmation } = useJournal();
@@ -57,18 +58,22 @@ export default function Home() {
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.5}>
-            <AmbientSoundLibrary />
+            <DeepWorkGuide />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.6}>
-            <MusicPlaylistGenerator />
+            <AmbientSoundLibrary />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.7}>
-            <ThemeSelector />
+            <MusicPlaylistGenerator />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.8}>
+            <ThemeSelector />
+          </AnimatedContainer>
+
+          <AnimatedContainer delay={0.9}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
