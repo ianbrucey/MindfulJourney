@@ -1,4 +1,4 @@
-import { Moon, Sun, Sunrise, Sunset, Cloud, Stars } from "lucide-react";
+import { Moon, Sun, Sunrise, Sunset, Cloud, Stars, RotateCcw } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -10,11 +10,17 @@ import { useTheme } from "@/hooks/use-theme";
 
 const themes = [
   {
+    id: "default",
+    name: "Default Theme",
+    icon: RotateCcw,
+    primary: "hsl(222.2 47.4% 11.2%)",
+    variant: "professional",
+  },
+  {
     id: "ocean",
     name: "Ocean Calm",
     icon: Sunset,
     primary: "hsl(199, 89%, 48%)",
-    description: "Serene blues inspired by peaceful ocean waves",
     variant: "professional",
   },
   {
@@ -22,7 +28,6 @@ const themes = [
     name: "Forest Serenity",
     icon: Sunrise,
     primary: "hsl(150, 60%, 40%)",
-    description: "Calming greens from a peaceful forest",
     variant: "tint",
   },
   {
@@ -30,7 +35,6 @@ const themes = [
     name: "Night Meditation",
     icon: Moon,
     primary: "hsl(245, 40%, 40%)",
-    description: "Deep purples for evening relaxation",
     variant: "vibrant",
   },
   {
@@ -38,7 +42,6 @@ const themes = [
     name: "Morning Zen",
     icon: Sun,
     primary: "hsl(35, 95%, 60%)",
-    description: "Warm sunrise colors for morning meditation",
     variant: "tint",
   },
   {
@@ -46,7 +49,6 @@ const themes = [
     name: "Misty Mountain",
     icon: Cloud,
     primary: "hsl(210, 20%, 60%)",
-    description: "Soft, misty grays for deep focus",
     variant: "professional",
   },
   {
@@ -54,7 +56,6 @@ const themes = [
     name: "Cosmic Flow",
     icon: Stars,
     primary: "hsl(280, 60%, 45%)",
-    description: "Cosmic purples for transcendent meditation",
     variant: "vibrant",
   },
 ] as const;
@@ -78,7 +79,7 @@ export default function ThemeSelector() {
               <Button
                 key={theme.id}
                 variant="outline"
-                className="flex flex-col items-center gap-2 h-auto p-4 hover:bg-accent transition-colors min-h-[160px]"
+                className="flex flex-col items-center gap-2 h-auto py-4 px-2 hover:bg-accent transition-colors"
                 onClick={() => {
                   setTheme({
                     primary: theme.primary,
@@ -89,10 +90,7 @@ export default function ThemeSelector() {
                 }}
               >
                 <Icon className="h-8 w-8" style={{ color: theme.primary }} />
-                <span className="text-sm font-medium line-clamp-1">{theme.name}</span>
-                <span className="text-xs text-muted-foreground text-center line-clamp-2">
-                  {theme.description}
-                </span>
+                <span className="text-sm font-medium text-center">{theme.name}</span>
               </Button>
             );
           })}
