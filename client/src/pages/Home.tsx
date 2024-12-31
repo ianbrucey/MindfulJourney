@@ -18,6 +18,7 @@ import { AnimatedContainer } from "@/components/ui/animated-container";
 import { motion } from "framer-motion";
 import ShareDialog from "@/components/ShareDialog";
 import GuidedMeditation from "@/components/GuidedMeditation";
+import AmbientSoundLibrary from "@/components/AmbientSoundLibrary";
 
 export default function Home() {
   const { entries, todayAffirmation } = useJournal();
@@ -56,7 +57,7 @@ export default function Home() {
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.5}>
-            <AmbientSoundGenerator />
+            <AmbientSoundLibrary />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.6}>
