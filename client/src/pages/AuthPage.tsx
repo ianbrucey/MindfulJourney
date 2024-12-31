@@ -42,7 +42,9 @@ export default function AuthPage({ returnTo }: AuthPageProps) {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const result = await (isLogin ? login(values) : register(values));
+      const action = isLogin ? login : register;
+      const result = await action(values);
+
       if (!result.ok) {
         toast({
           title: "Error",
@@ -51,14 +53,22 @@ export default function AuthPage({ returnTo }: AuthPageProps) {
         });
         return;
       }
+
       toast({
         title: isLogin ? "Welcome back!" : "Account created",
         description: isLogin
           ? "Successfully logged in"
           : "Your account has been created successfully",
       });
+
       // Use the redirectTo URL from the server response or the returnTo prop
-      setLocation(returnTo || result.redirectTo || '/');
+      if (returnTo) {
+        setLocation(returnTo);
+      } else if (result.redirectTo) {
+        setLocation(result.redirectTo);
+      } else {
+        setLocation('/');
+      }
     } catch (error: any) {
       toast({
         title: "Error",

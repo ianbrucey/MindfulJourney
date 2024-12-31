@@ -28,6 +28,12 @@ const crypto = {
   },
 };
 
+declare module 'express-session' {
+  interface SessionData {
+    returnTo?: string;
+  }
+}
+
 export function setupAuth(app: Express) {
   const MemoryStore = createMemoryStore(session);
   const sessionSettings: session.SessionOptions = {
@@ -122,7 +128,7 @@ export function setupAuth(app: Express) {
         }
         // Clear the returnTo from session after use
         delete req.session.returnTo;
-        return res.json({ redirectTo: returnTo });
+        return res.json({ ok: true, redirectTo: returnTo });
       });
     } catch (error) {
       next(error);
@@ -130,7 +136,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: any, user: Express.User | false, info: { message: string }) => {
       if (err) {
         return next(err);
       }
@@ -143,7 +149,7 @@ export function setupAuth(app: Express) {
         }
         const returnTo = req.session.returnTo || '/';
         delete req.session.returnTo;
-        return res.json({ redirectTo: returnTo });
+        return res.json({ ok: true, redirectTo: returnTo });
       });
     })(req, res, next);
   });
@@ -161,7 +167,7 @@ export function setupAuth(app: Express) {
       if (err) {
         return res.status(500).send("Logout failed");
       }
-      res.json({ message: "Logged out successfully" });
+      res.json({ ok: true });
     });
   });
 
