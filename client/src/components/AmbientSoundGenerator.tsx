@@ -13,15 +13,15 @@ import { Volume2, Play, Pause } from "lucide-react";
 import * as Tone from "tone";
 
 const soundTypes = {
-  whiteNoise: "White Noise",
-  pinkNoise: "Pink Noise",
-  brownNoise: "Brown Noise",
+  white: "White Noise",
+  pink: "Pink Noise",
+  brown: "Brown Noise",
 } as const;
 
 export default function AmbientSoundGenerator() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(50);
-  const [soundType, setSoundType] = useState<keyof typeof soundTypes>("whiteNoise");
+  const [soundType, setSoundType] = useState<keyof typeof soundTypes>("white");
   const [noise, setNoise] = useState<Tone.Noise | null>(null);
 
   useEffect(() => {
@@ -48,13 +48,13 @@ export default function AmbientSoundGenerator() {
     if (!noise) return;
 
     await Tone.start();
-    
+
     if (isPlaying) {
       noise.stop();
     } else {
       noise.start();
     }
-    
+
     setIsPlaying(!isPlaying);
   };
 
