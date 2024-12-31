@@ -16,7 +16,7 @@ export const entries = pgTable("entries", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   content: text("content").notNull(),
-  mood: integer("mood").notNull(), // 1-5 scale
+  mood: integer("mood").notNull(),
   tags: text("tags").array(),
   analysis: json("analysis").$type<{
     sentiment: { score: number; label: string };
@@ -32,6 +32,18 @@ export const entries = pgTable("entries", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const dailyChallenges = pgTable("daily_challenges", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  challenge: text("challenge").notNull(),
+  category: text("category").notNull(),
+  difficulty: text("difficulty").notNull(),
+  completed: boolean("completed").default(false),
+  completedAt: timestamp("completed_at"),
+  reflectionNote: text("reflection_note"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const affirmations = pgTable("affirmations", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -43,7 +55,7 @@ export const achievements = pgTable("achievements", {
   id: serial("id").primaryKey(),
   name: text("name").unique().notNull(),
   description: text("description").notNull(),
-  icon: text("icon").notNull(), // Lucide icon name
+  icon: text("icon").notNull(),
   requirement: text("requirement").notNull(),
   level: integer("level").default(1),
 });
@@ -60,10 +72,10 @@ export const wellnessGoals = pgTable("wellness_goals", {
   userId: integer("user_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   description: text("description"),
-  category: text("category").notNull(), // meditation, exercise, journaling, etc.
-  targetValue: integer("target_value").notNull(), // e.g., number of minutes, sessions, etc.
+  category: text("category").notNull(),
+  targetValue: integer("target_value").notNull(),
   currentValue: integer("current_value").default(0),
-  frequency: text("frequency").notNull(), // daily, weekly, monthly
+  frequency: text("frequency").notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date"),
   isCompleted: boolean("is_completed").default(false),
@@ -79,7 +91,6 @@ export const goalProgress = pgTable("goal_progress", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Existing schemas
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = typeof users.$inferInsert;
@@ -89,6 +100,11 @@ export const insertEntrySchema = createInsertSchema(entries);
 export const selectEntrySchema = createSelectSchema(entries);
 export type InsertEntry = typeof entries.$inferInsert;
 export type SelectEntry = typeof entries.$inferSelect;
+
+export const insertDailyChallengeSchema = createInsertSchema(dailyChallenges);
+export const selectDailyChallengeSchema = createSelectSchema(dailyChallenges);
+export type InsertDailyChallenge = typeof dailyChallenges.$inferInsert;
+export type SelectDailyChallenge = typeof dailyChallenges.$inferSelect;
 
 export const insertAffirmationSchema = createInsertSchema(affirmations);
 export const selectAffirmationSchema = createSelectSchema(affirmations);
@@ -105,7 +121,6 @@ export const selectUserAchievementSchema = createSelectSchema(userAchievements);
 export type InsertUserAchievement = typeof userAchievements.$inferInsert;
 export type SelectUserAchievement = typeof userAchievements.$inferSelect;
 
-// New schemas for wellness goals
 export const insertWellnessGoalSchema = createInsertSchema(wellnessGoals);
 export const selectWellnessGoalSchema = createSelectSchema(wellnessGoals);
 export type InsertWellnessGoal = typeof wellnessGoals.$inferInsert;

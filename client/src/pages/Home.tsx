@@ -8,6 +8,7 @@ import { PenSquare, Calendar, TrendingUp, Target } from "lucide-react";
 import AffirmationCard from "@/components/AffirmationCard";
 import StreakCounter from "@/components/StreakCounter";
 import AchievementsList from "@/components/AchievementsList";
+import DailyChallenge from "@/components/DailyChallenge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 
@@ -25,6 +26,8 @@ export default function Home() {
           </h1>
 
           <AffirmationCard affirmation={todayAffirmation} />
+
+          <DailyChallenge />
 
           <StreakCounter
             currentStreak={user?.currentStreak || 0}

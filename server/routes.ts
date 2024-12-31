@@ -2,9 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth.js";
 import { db } from "@db";
-import { entries, affirmations, achievements, userAchievements, users, wellnessGoals, goalProgress } from "@db/schema";
-import { eq, desc, and } from "drizzle-orm";
-import { generateAffirmation, analyzeSentiment } from "./openai.js";
+import { entries, affirmations, achievements, userAchievements, users, wellnessGoals, goalProgress, dailyChallenges } from "@db/schema";
+import { eq, desc, and, gte, lte } from "drizzle-orm";
+import { generateAffirmation, analyzeSentiment, generateDailyChallenge } from "./openai.js";
 import type { SelectUser } from "@db/schema";
 
 // Extend Express.User type
@@ -295,6 +295,77 @@ export function registerRoutes(app: Express): Server {
     });
 
     res.json(progress);
+  });
+
+  // Get today's challenge
+  app.get("/api/challenges/today", requireAuth, async (req, res) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check if user already has a challenge for today
+    let [todayChallenge] = await db.query.dailyChallenges.findMany({
+      where: and(
+        eq(dailyChallenges.userId, req.user!.id),
+        gte(dailyChallenges.createdAt, today)
+      ),
+      limit: 1,
+    });
+
+    if (!todayChallenge) {
+      // Get recent entries and active goals to personalize the challenge
+      const recentEntries = await db.query.entries.findMany({
+        where: eq(entries.userId, req.user!.id),
+        orderBy: [desc(entries.createdAt)],
+        limit: 5,
+      });
+
+      const activeGoals = await db.query.wellnessGoals.findMany({
+        where: and(
+          eq(wellnessGoals.userId, req.user!.id),
+          eq(wellnessGoals.isCompleted, false)
+        ),
+      });
+
+      const challenge = await generateDailyChallenge(recentEntries, activeGoals);
+
+      [todayChallenge] = await db.insert(dailyChallenges)
+        .values({
+          userId: req.user!.id,
+          ...challenge,
+        })
+        .returning();
+    }
+
+    res.json(todayChallenge);
+  });
+
+  // Complete a challenge
+  app.post("/api/challenges/:id/complete", requireAuth, async (req, res) => {
+    const [challenge] = await db.update(dailyChallenges)
+      .set({
+        completed: true,
+        completedAt: new Date(),
+        reflectionNote: req.body.reflectionNote,
+      })
+      .where(
+        and(
+          eq(dailyChallenges.id, parseInt(req.params.id)),
+          eq(dailyChallenges.userId, req.user!.id)
+        )
+      )
+      .returning();
+
+    res.json(challenge);
+  });
+
+  // Get challenge history
+  app.get("/api/challenges/history", requireAuth, async (req, res) => {
+    const challenges = await db.query.dailyChallenges.findMany({
+      where: eq(dailyChallenges.userId, req.user!.id),
+      orderBy: [desc(dailyChallenges.createdAt)],
+    });
+
+    res.json(challenges);
   });
 
   const httpServer = createServer(app);

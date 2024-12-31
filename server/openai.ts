@@ -29,6 +29,53 @@ export async function generateAffirmation(): Promise<string> {
   }
 }
 
+export async function generateDailyChallenge(recentEntries: any[], activeGoals: any[]): Promise<{
+  challenge: string;
+  category: string;
+  difficulty: string;
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are a wellness coach creating personalized daily challenges.
+          Based on the user's recent journal entries and active goals, generate an engaging and achievable daily wellness challenge.
+          The challenge should be specific, measurable, and aligned with their current mindset and goals.
+          Respond with JSON containing:
+          - challenge: clear instructions for the challenge
+          - category: one of [meditation, exercise, mindfulness, gratitude, creativity, social]
+          - difficulty: one of [easy, medium, hard]`,
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            recentEntries,
+            activeGoals,
+          }),
+        },
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const result = JSON.parse(response.choices[0]?.message?.content || "{}");
+
+    return {
+      challenge: result.challenge || "Practice mindful breathing for 5 minutes",
+      category: result.category || "mindfulness",
+      difficulty: result.difficulty || "easy",
+    };
+  } catch (error) {
+    console.error("Error generating daily challenge:", error);
+    return {
+      challenge: "Practice mindful breathing for 5 minutes",
+      category: "mindfulness",
+      difficulty: "easy",
+    };
+  }
+}
+
 export async function analyzeSentiment(content: string): Promise<{
   sentiment: {
     score: number;
