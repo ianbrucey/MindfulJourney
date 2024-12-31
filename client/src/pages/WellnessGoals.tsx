@@ -59,12 +59,14 @@ export default function WellnessGoals() {
               <p className="text-sm text-muted-foreground">
                 Create your first wellness goal to start tracking your progress.
               </p>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Goal
-                </Button>
-              </DialogTrigger>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Your First Goal
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
             </div>
           </CardContent>
         </Card>
