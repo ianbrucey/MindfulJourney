@@ -9,6 +9,8 @@ import {
   ArrowRight,
   ChevronDown,
   ChevronUp,
+  Clock,
+  Activity,
 } from "lucide-react";
 import {
   Accordion,
@@ -16,6 +18,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 
@@ -48,13 +51,25 @@ interface EmotionalAnalysis {
 
 export default function EmotionalIntelligenceCoach() {
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   const { data: analysis, isLoading } = useQuery<EmotionalAnalysis>({
     queryKey: ["/api/emotional-intelligence/analysis"],
   });
 
   if (isLoading || !analysis) {
-    return null;
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2">
+            <Activity className="h-5 w-5 animate-pulse text-primary" />
+            <p className="text-sm text-muted-foreground">
+              Analyzing emotional patterns...
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   const { emotionalPatterns, insights, coaching } = analysis;
@@ -64,201 +79,147 @@ export default function EmotionalIntelligenceCoach() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Brain className="h-5 w-5 text-primary" />
-          Emotional Intelligence Coach
+          Emotional Intelligence Insights
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Emotional Patterns */}
-          <Card className="bg-accent/10">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Heart className="h-4 w-4 text-red-500" />
-                Emotional Patterns
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {emotionalPatterns.map((pattern, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="p-3 rounded-lg bg-background"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium">{pattern.emotion}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 h-2 rounded-full bg-primary/20">
-                          <div
-                            className="h-full rounded-full bg-primary"
-                            style={{ width: `${pattern.frequency}%` }}
-                          />
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {pattern.frequency}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Common triggers:
-                      {pattern.triggers.map((trigger, i) => (
-                        <span
-                          key={i}
-                          className="inline-block px-2 py-1 m-1 rounded-full bg-primary/10"
-                        >
-                          {trigger}
-                        </span>
-                      ))}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Insights and Growth */}
-          <Card className="bg-accent/10">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Lightbulb className="h-4 w-4 text-yellow-500" />
-                Insights & Growth
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Accordion type="single" collapsible>
-                <AccordionItem value="strengths">
-                  <AccordionTrigger>Emotional Strengths</AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="space-y-2">
-                      {insights.strengths.map((strength, index) => (
-                        <li
-                          key={index}
-                          className="flex items-start gap-2 text-sm"
-                        >
-                          <div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <Target className="h-3 w-3 text-green-500" />
-                          </div>
-                          {strength}
-                        </li>
-                      ))}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="growth">
-                  <AccordionTrigger>Growth Areas</AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="space-y-2">
-                      {insights.growthAreas.map((area, index) => (
-                        <li
-                          key={index}
-                          className="flex items-start gap-2 text-sm"
-                        >
-                          <div className="h-5 w-5 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <ArrowRight className="h-3 w-3 text-blue-500" />
-                          </div>
-                          {area}
-                        </li>
-                      ))}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="recommendations">
-                  <AccordionTrigger>Recommendations</AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="space-y-2">
-                      {insights.recommendations.map((rec, index) => (
-                        <li
-                          key={index}
-                          className="flex items-start gap-2 text-sm"
-                        >
-                          <div className="h-5 w-5 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <Lightbulb className="h-3 w-3 text-purple-500" />
-                          </div>
-                          {rec}
-                        </li>
-                      ))}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </CardContent>
-          </Card>
+        {/* Emotional State Overview */}
+        <div className="rounded-lg bg-accent/10 p-4">
+          <h3 className="mb-4 flex items-center gap-2 font-medium">
+            <Heart className="h-4 w-4 text-red-500" />
+            Current Emotional State
+          </h3>
+          <div className="space-y-4">
+            {emotionalPatterns.map((pattern, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{pattern.emotion}</span>
+                  <Progress value={pattern.frequency} className="w-24" />
+                </div>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {pattern.triggers.map((trigger, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center rounded-full bg-primary/10 px-2 py-1 text-xs"
+                    >
+                      {trigger}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
 
-        {/* Coaching Section */}
-        <Card className="relative overflow-hidden">
-          <CardHeader>
-            <CardTitle className="text-lg">Personal Coaching</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 rounded-lg bg-primary/5 border border-primary/10">
-              <p className="text-sm mb-4">{coaching.observation}</p>
-              <p className="text-sm font-medium">{coaching.guidance}</p>
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="font-medium">Recommended Exercises</h4>
-              <div className="grid gap-4">
-                {coaching.exercises.map((exercise, index) => (
-                  <motion.div
-                    key={index}
-                    className="p-4 rounded-lg bg-accent/10 cursor-pointer"
-                    onClick={() =>
-                      setSelectedExercise(
-                        selectedExercise?.name === exercise.name ? null : exercise
-                      )
-                    }
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Brain className="h-4 w-4 text-primary" />
-                        <span className="font-medium">{exercise.name}</span>
-                        <span className="text-sm text-muted-foreground">
-                          ({exercise.duration})
-                        </span>
+        {/* Personal Growth Insights */}
+        <div className="rounded-lg bg-accent/10 p-4">
+          <h3 className="mb-4 flex items-center gap-2 font-medium">
+            <Lightbulb className="h-4 w-4 text-yellow-500" />
+            Personal Growth Insights
+          </h3>
+          <Accordion type="single" collapsible>
+            <AccordionItem value="strengths">
+              <AccordionTrigger>Emotional Strengths</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-2">
+                  {insights.strengths.map((strength, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <div className="mt-1 rounded-full bg-green-500/20 p-1">
+                        <Target className="h-3 w-3 text-green-500" />
                       </div>
-                      {selectedExercise?.name === exercise.name ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
+                      <p className="text-sm">{strength}</p>
                     </div>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
 
-                    <AnimatePresence>
-                      {selectedExercise?.name === exercise.name && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="pt-4 space-y-2">
-                            <p className="text-sm">{exercise.description}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Benefit: {exercise.benefit}
-                            </p>
-                            <Button
-                              variant="secondary"
-                              className="w-full mt-2"
-                              size="sm"
-                            >
-                              Start Exercise
-                            </Button>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            <AccordionItem value="areas">
+              <AccordionTrigger>Growth Areas</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-2">
+                  {insights.growthAreas.map((area, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <div className="mt-1 rounded-full bg-blue-500/20 p-1">
+                        <ArrowRight className="h-3 w-3 text-blue-500" />
+                      </div>
+                      <p className="text-sm">{area}</p>
+                    </div>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+
+        {/* Personalized Recommendations */}
+        <div className="rounded-lg bg-accent/10 p-4">
+          <h3 className="mb-4 flex items-center gap-2 font-medium">
+            <Target className="h-4 w-4 text-purple-500" />
+            Self-Care Recommendations
+          </h3>
+          <div className="space-y-3">
+            {coaching.exercises.map((exercise, index) => (
+              <motion.div
+                key={index}
+                className="cursor-pointer rounded-lg bg-background p-4 transition-colors hover:bg-accent/5"
+                onClick={() => setSelectedExercise(selectedExercise?.name === exercise.name ? null : exercise)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{exercise.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({exercise.duration})
+                    </span>
+                  </div>
+                  {selectedExercise?.name === exercise.name ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </div>
+
+                <AnimatePresence>
+                  {selectedExercise?.name === exercise.name && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-4 space-y-2">
+                        <p className="text-sm">{exercise.description}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Benefit: {exercise.benefit}
+                        </p>
+                        <Button variant="secondary" className="mt-2 w-full" size="sm">
+                          Start Exercise
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Personal Coaching Message */}
+        <div className="rounded-lg border border-primary/10 bg-primary/5 p-4">
+          <div className="mb-4 flex items-center gap-2">
+            <Brain className="h-4 w-4 text-primary" />
+            <h3 className="font-medium">Personal Guidance</h3>
+          </div>
+          <p className="mb-3 text-sm">{coaching.observation}</p>
+          <p className="text-sm font-medium text-primary">{coaching.guidance}</p>
+        </div>
       </CardContent>
     </Card>
   );
