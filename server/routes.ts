@@ -148,6 +148,34 @@ export function registerRoutes(app: Express): Server {
     }).returning();
 
     await updateStreakAndCheckAchievements(req.user!.id);
+
+    // Check for "First Step" achievement
+    const userEntries = await db.query.entries.findMany({
+      where: eq(entries.userId, req.user!.id),
+    });
+
+    if (userEntries.length === 1) {  // This is their first entry
+      const firstStepAchievement = await db.query.achievements.findFirst({
+        where: eq(achievements.name, "First Step"),
+      });
+
+      if (firstStepAchievement) {
+        const existing = await db.query.userAchievements.findFirst({
+          where: and(
+            eq(userAchievements.userId, req.user!.id),
+            eq(userAchievements.achievementId, firstStepAchievement.id),
+          ),
+        });
+
+        if (!existing) {
+          await db.insert(userAchievements).values({
+            userId: req.user!.id,
+            achievementId: firstStepAchievement.id,
+          });
+        }
+      }
+    }
+
     res.json(entry);
   });
 
