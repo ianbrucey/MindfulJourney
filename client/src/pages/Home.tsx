@@ -11,6 +11,7 @@ import AchievementsList from "@/components/AchievementsList";
 import DailyChallenge from "@/components/DailyChallenge";
 import AmbientSoundGenerator from "@/components/AmbientSoundGenerator";
 import ThemeSelector from "@/components/ThemeSelector";
+import EmotionMap from "@/components/EmotionMap";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { AnimatedContainer } from "@/components/ui/animated-container";
@@ -46,21 +47,25 @@ export default function Home() {
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.3}>
-            <AmbientSoundGenerator />
+            <EmotionMap entries={entries || []} />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.4}>
-            <ThemeSelector />
+            <AmbientSoundGenerator />
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.5}>
+            <ThemeSelector />
+          </AnimatedContainer>
+
+          <AnimatedContainer delay={0.6}>
             <StreakCounter
               currentStreak={user?.currentStreak || 0}
               longestStreak={user?.longestStreak || 0}
             />
           </AnimatedContainer>
 
-          <AnimatedContainer delay={0.6}>
+          <AnimatedContainer delay={0.7}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
