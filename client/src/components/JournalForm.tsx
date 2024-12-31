@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import MoodPicker from "./MoodPicker";
+import VoiceInput from "./VoiceInput";
 import { useJournal } from "@/hooks/use-journal";
 import type { SelectEntry } from "@db/schema";
 import { useLocation } from "wouter";
@@ -49,6 +50,10 @@ export default function JournalForm({ entry }: JournalFormProps) {
     setLocation("/");
   };
 
+  const handleVoiceTranscript = (transcript: string) => {
+    form.setValue("content", transcript, { shouldValidate: true });
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -57,10 +62,13 @@ export default function JournalForm({ entry }: JournalFormProps) {
           name="content"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>What's on your mind?</FormLabel>
+              <FormLabel className="flex items-center justify-between">
+                What's on your mind?
+                <VoiceInput onTranscript={handleVoiceTranscript} />
+              </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Write your thoughts here..."
+                  placeholder="Write or speak your thoughts here..."
                   className="min-h-[200px]"
                   {...field}
                 />
