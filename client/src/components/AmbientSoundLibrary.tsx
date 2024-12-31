@@ -18,18 +18,92 @@ import {
   TreePine,
   Cloud,
   Umbrella,
+  Sunrise,
+  Moon,
+  Mountain,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import * as Tone from "tone";
+import WaveformVisualizer from "./WaveformVisualizer";
 
 const soundLibrary = [
-  { id: "white", name: "White Noise", icon: Wind, frequency: 1, noiseType: "white" },
-  { id: "pink", name: "Pink Noise", icon: Wind, frequency: 0.5, noiseType: "pink" },
-  { id: "brown", name: "Brown Noise", icon: Wind, frequency: 0.25, noiseType: "brown" },
-  { id: "waves", name: "Ocean Waves", icon: Waves, frequency: 0.1, noiseType: "brown" },
-  { id: "rain", name: "Gentle Rain", icon: Umbrella, frequency: 0.3, noiseType: "pink" },
-  { id: "thunder", name: "Distant Thunder", icon: Cloud, frequency: 0.05, noiseType: "brown" },
-  { id: "forest", name: "Forest Ambience", icon: TreePine, frequency: 0.4, noiseType: "pink" },
+  {
+    id: "forest-day",
+    name: "Daytime Forest",
+    icon: TreePine,
+    description: "Gentle rustling leaves with distant birdsong",
+    sounds: [
+      { type: "pink", frequency: 0.4, volume: -20, filter: { frequency: 2000, Q: 1 } },
+      { type: "brown", frequency: 0.1, volume: -30, filter: { frequency: 800, Q: 2 } },
+    ],
+    lfoSettings: { frequency: 0.2, min: 400, max: 1200 }
+  },
+  {
+    id: "forest-night",
+    name: "Nighttime Forest",
+    icon: Moon,
+    description: "Cricket chirps and soft night winds",
+    sounds: [
+      { type: "pink", frequency: 0.3, volume: -25, filter: { frequency: 3000, Q: 1 } },
+      { type: "white", frequency: 0.2, volume: -40, filter: { frequency: 4000, Q: 3 } }
+    ],
+    lfoSettings: { frequency: 0.15, min: 2000, max: 4000 }
+  },
+  {
+    id: "ocean-waves",
+    name: "Ocean Waves",
+    icon: Waves,
+    description: "Rhythmic waves with distant seabirds",
+    sounds: [
+      { type: "brown", frequency: 0.1, volume: -15, filter: { frequency: 600, Q: 0.5 } },
+      { type: "pink", frequency: 0.05, volume: -35, filter: { frequency: 1500, Q: 2 } }
+    ],
+    lfoSettings: { frequency: 0.08, min: 200, max: 800 }
+  },
+  {
+    id: "gentle-rain",
+    name: "Gentle Rain",
+    icon: Umbrella,
+    description: "Soft rainfall on a quiet afternoon",
+    sounds: [
+      { type: "pink", frequency: 0.3, volume: -20, filter: { frequency: 3000, Q: 1 } },
+      { type: "white", frequency: 0.4, volume: -30, filter: { frequency: 4000, Q: 2 } }
+    ],
+    lfoSettings: { frequency: 0.25, min: 2000, max: 4000 }
+  },
+  {
+    id: "thunderstorm",
+    name: "Distant Storm",
+    icon: Cloud,
+    description: "Rolling thunder with heavy rain",
+    sounds: [
+      { type: "brown", frequency: 0.05, volume: -20, filter: { frequency: 400, Q: 0.7 } },
+      { type: "pink", frequency: 0.3, volume: -25, filter: { frequency: 2000, Q: 1 } }
+    ],
+    lfoSettings: { frequency: 0.1, min: 100, max: 1000 }
+  },
+  {
+    id: "mountain-wind",
+    name: "Mountain Winds",
+    icon: Mountain,
+    description: "High-altitude gusts and whistling breezes",
+    sounds: [
+      { type: "pink", frequency: 0.5, volume: -22, filter: { frequency: 1500, Q: 1 } },
+      { type: "white", frequency: 0.3, volume: -35, filter: { frequency: 3000, Q: 2 } }
+    ],
+    lfoSettings: { frequency: 0.3, min: 800, max: 2000 }
+  },
+  {
+    id: "morning-meadow",
+    name: "Morning Meadow",
+    icon: Sunrise,
+    description: "Early morning nature awakening",
+    sounds: [
+      { type: "pink", frequency: 0.4, volume: -25, filter: { frequency: 2500, Q: 1 } },
+      { type: "brown", frequency: 0.2, volume: -35, filter: { frequency: 1000, Q: 1.5 } }
+    ],
+    lfoSettings: { frequency: 0.2, min: 1000, max: 3000 }
+  },
 ];
 
 export default function AmbientSoundLibrary() {
@@ -38,59 +112,69 @@ export default function AmbientSoundLibrary() {
   const [volume, setVolume] = useState(30);
   const [duration, setDuration] = useState(15); // minutes
 
-  const [noise, setNoise] = useState<Tone.Noise | null>(null);
-  const [filter, setFilter] = useState<Tone.Filter | null>(null);
-  const [lfo, setLfo] = useState<Tone.LFO | null>(null);
+  const noiseGenerators = useRef<Tone.Noise[]>([]);
+  const filters = useRef<Tone.Filter[]>([]);
+  const lfos = useRef<Tone.LFO[]>([]);
   const timerRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    // Create the noise generator and filter chain
-    const newNoise = new Tone.Noise({
-      type: currentSound.noiseType as "white" | "pink" | "brown",
-      volume: Tone.gainToDb(volume / 100),
+    // Cleanup previous sound chain
+    noiseGenerators.current.forEach(noise => noise.dispose());
+    filters.current.forEach(filter => filter.dispose());
+    lfos.current.forEach(lfo => lfo.dispose());
+    noiseGenerators.current = [];
+    filters.current = [];
+    lfos.current = [];
+
+    // Create layered sound generators for the current preset
+    currentSound.sounds.forEach(sound => {
+      const noise = new Tone.Noise({
+        type: sound.type as "white" | "pink" | "brown",
+        volume: Tone.gainToDb(volume / 100) + sound.volume,
+      });
+
+      const filter = new Tone.Filter({
+        frequency: sound.filter.frequency,
+        type: "lowpass",
+        Q: sound.filter.Q,
+      });
+
+      const lfo = new Tone.LFO({
+        frequency: currentSound.lfoSettings.frequency * sound.frequency,
+        min: currentSound.lfoSettings.min,
+        max: currentSound.lfoSettings.max,
+      });
+
+      noise.connect(filter);
+      filter.toDestination();
+      lfo.connect(filter.frequency);
+
+      noiseGenerators.current.push(noise);
+      filters.current.push(filter);
+      lfos.current.push(lfo);
     });
-
-    const newFilter = new Tone.Filter({
-      frequency: 800,
-      type: "lowpass",
-      rolloff: -24,
-    });
-
-    const newLfo = new Tone.LFO({
-      frequency: currentSound.frequency,
-      min: 400,
-      max: 1200,
-    });
-
-    // Connect the audio chain
-    newNoise.connect(newFilter);
-    newFilter.toDestination();
-    newLfo.connect(newFilter.frequency);
-
-    setNoise(newNoise);
-    setFilter(newFilter);
-    setLfo(newLfo);
 
     return () => {
-      newNoise.dispose();
-      newFilter.dispose();
-      newLfo.dispose();
+      noiseGenerators.current.forEach(noise => noise.dispose());
+      filters.current.forEach(filter => filter.dispose());
+      lfos.current.forEach(lfo => lfo.dispose());
     };
   }, [currentSound]);
 
   useEffect(() => {
-    if (noise) {
-      noise.volume.value = Tone.gainToDb(volume / 100);
-    }
-  }, [volume, noise]);
+    noiseGenerators.current.forEach((noise, index) => {
+      const baseVolume = currentSound.sounds[index].volume;
+      noise.volume.value = Tone.gainToDb(volume / 100) + baseVolume;
+    });
+  }, [volume, currentSound]);
 
   const toggleSound = async () => {
-    if (!noise || !lfo) return;
+    if (!noiseGenerators.current.length) return;
 
     if (!isPlaying) {
       await Tone.start();
-      noise.start();
-      lfo.start();
+      noiseGenerators.current.forEach(noise => noise.start());
+      lfos.current.forEach(lfo => lfo.start());
 
       if (duration > 0) {
         timerRef.current = setTimeout(() => {
@@ -105,8 +189,8 @@ export default function AmbientSoundLibrary() {
   };
 
   const stopSound = () => {
-    if (noise) noise.stop();
-    if (lfo) lfo.stop();
+    noiseGenerators.current.forEach(noise => noise.stop());
+    lfos.current.forEach(lfo => lfo.stop());
     if (timerRef.current) {
       clearTimeout(timerRef.current);
     }
@@ -122,8 +206,15 @@ export default function AmbientSoundLibrary() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <WaveformVisualizer
+          isPlaying={isPlaying}
+          ambientVolume={volume}
+          musicVolume={0}
+          isMusicEnabled={false}
+        />
+
         <div className="space-y-2">
-          <label className="text-sm font-medium">Sound Type</label>
+          <label className="text-sm font-medium">Sound Scene</label>
           <Select
             value={currentSound.id}
             onValueChange={(value) => {
@@ -135,7 +226,7 @@ export default function AmbientSoundLibrary() {
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select a sound" />
+              <SelectValue placeholder="Select a sound scene" />
             </SelectTrigger>
             <SelectContent>
               {soundLibrary.map((sound) => {
@@ -151,6 +242,9 @@ export default function AmbientSoundLibrary() {
               })}
             </SelectContent>
           </Select>
+          <p className="text-sm text-muted-foreground">
+            {currentSound.description}
+          </p>
         </div>
 
         <div className="space-y-2">
