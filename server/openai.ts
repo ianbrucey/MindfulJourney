@@ -36,6 +36,12 @@ export async function analyzeSentiment(content: string): Promise<{
   };
   themes: string[];
   insights: string;
+  recommendations: Array<{
+    activity: string;
+    reason: string;
+    duration: string;
+    benefit: string;
+  }>;
 }> {
   try {
     const response = await openai.chat.completions.create({
@@ -44,11 +50,16 @@ export async function analyzeSentiment(content: string): Promise<{
         {
           role: "system",
           content: `You are an empathetic AI therapist analyzing journal entries. 
-          Analyze the sentiment, emotional themes, and provide personalized insights.
+          Analyze the sentiment, emotional themes, provide personalized insights, and suggest self-care activities.
           Respond with a JSON object containing:
           - sentiment: { score (1-5, where 1 is very negative and 5 is very positive), label (descriptive word) }
           - themes: array of emotional themes present
-          - insights: a brief, personalized insight about the entry`,
+          - insights: a brief, personalized insight about the entry
+          - recommendations: array of recommended self-care activities, each containing:
+            - activity: specific activity name
+            - reason: why this activity would be helpful based on the entry
+            - duration: suggested time commitment (e.g. "5 minutes", "30 minutes")
+            - benefit: expected benefit from doing this activity`,
         },
         {
           role: "user",
@@ -66,6 +77,7 @@ export async function analyzeSentiment(content: string): Promise<{
       },
       themes: analysis.themes,
       insights: analysis.insights,
+      recommendations: analysis.recommendations,
     };
   } catch (error) {
     console.error("Error analyzing sentiment:", error);
@@ -73,6 +85,7 @@ export async function analyzeSentiment(content: string): Promise<{
       sentiment: { score: 3, label: "neutral" },
       themes: [],
       insights: "Unable to analyze the entry at this time.",
+      recommendations: [],
     };
   }
 }
