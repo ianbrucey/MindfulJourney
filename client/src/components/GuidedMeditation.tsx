@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -54,8 +53,10 @@ export default function GuidedMeditation() {
   const [progress, setProgress] = useState(0);
   const [currentType, setCurrentType] = useState(meditationTypes[0]);
   const [currentStep, setCurrentStep] = useState(0);
+  const [breathPhase, setBreathPhase] = useState(0);
   const timerRef = useRef<NodeJS.Timeout>();
   const startTimeRef = useRef<number>();
+  const phaseTimerRef = useRef<NodeJS.Timeout>();
   const [noise, setNoise] = useState<Tone.Noise | null>(null);
   const [volume, setVolume] = useState(30);
 
@@ -91,8 +92,10 @@ export default function GuidedMeditation() {
     noise.start();
 
     setIsPlaying(true);
+    setBreathPhase(0);
     startTimeRef.current = Date.now();
 
+    // Set up the main progress timer
     timerRef.current = setInterval(() => {
       const elapsed = Date.now() - startTimeRef.current!;
       const newProgress = (elapsed / (currentType.duration * 1000)) * 100;
@@ -101,6 +104,7 @@ export default function GuidedMeditation() {
         stopMeditation();
       } else {
         setProgress(newProgress);
+
         if (currentType.id === "body-scan") {
           const stepDuration = currentType.duration / currentType.instructions.length;
           const currentStepIndex = Math.floor(elapsed / 1000 / stepDuration);
@@ -113,6 +117,18 @@ export default function GuidedMeditation() {
         }
       }
     }, 100);
+
+    // Set up the breathing phase timer if in breathing mode
+    if (currentType.id === "breathing") {
+      const breathingCycle = currentType.pattern;
+      const cycleDuration = 
+        (breathingCycle.inhale + breathingCycle.hold + 
+         breathingCycle.exhale + breathingCycle.rest) * 1000;
+
+      phaseTimerRef.current = setInterval(() => {
+        setBreathPhase(prev => (prev + 1) % 4);
+      }, cycleDuration / 4);
+    }
   };
 
   const stopMeditation = () => {
@@ -123,8 +139,12 @@ export default function GuidedMeditation() {
     setIsPlaying(false);
     setProgress(0);
     setCurrentStep(0);
+    setBreathPhase(0);
     if (timerRef.current) {
       clearInterval(timerRef.current);
+    }
+    if (phaseTimerRef.current) {
+      clearInterval(phaseTimerRef.current);
     }
   };
 
@@ -138,6 +158,21 @@ export default function GuidedMeditation() {
     0,
     Math.ceil(currentType.duration * (1 - progress / 100))
   );
+
+  const getBreathingPhase = () => {
+    switch (breathPhase) {
+      case 0:
+        return "Inhale...";
+      case 1:
+        return "Hold...";
+      case 2:
+        return "Exhale...";
+      case 3:
+        return "Rest...";
+      default:
+        return "Inhale...";
+    }
+  };
 
   return (
     <Card>
@@ -208,13 +243,7 @@ export default function GuidedMeditation() {
                     className="w-16 h-16 rounded-full bg-primary/20 mb-4"
                   />
                   <p className="text-lg font-medium text-center">
-                    {currentStep % 4 === 0
-                      ? "Inhale..."
-                      : currentStep % 4 === 1
-                      ? "Hold..."
-                      : currentStep % 4 === 2
-                      ? "Exhale..."
-                      : "Rest..."}
+                    {getBreathingPhase()}
                   </p>
                 </div>
               ) : (
