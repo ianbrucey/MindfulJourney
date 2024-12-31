@@ -141,7 +141,7 @@ async function initializeSubscriptionPlans() {
     await db.insert(subscriptionPlans).values([
       {
         name: 'basic',
-        price: new Decimal(0),
+        price: '0.00',
         priceId: 'price_free',
         features: [
           'Basic journaling',
@@ -154,7 +154,7 @@ async function initializeSubscriptionPlans() {
       },
       {
         name: 'premium',
-        price: new Decimal(14.99),
+        price: '14.99',
         priceId: process.env.STRIPE_PREMIUM_PRICE_ID,
         features: [
           'Unlimited AI-powered journaling',
@@ -170,7 +170,7 @@ async function initializeSubscriptionPlans() {
       },
       {
         name: 'professional',
-        price: new Decimal(29.99),
+        price: '29.99',
         priceId: process.env.STRIPE_PROFESSIONAL_PRICE_ID,
         features: [
           'All Premium features',
