@@ -9,8 +9,6 @@ import AffirmationCard from "@/components/AffirmationCard";
 import StreakCounter from "@/components/StreakCounter";
 import AchievementsList from "@/components/AchievementsList";
 import DailyChallenge from "@/components/DailyChallenge";
-import AmbientSoundLibrary from "@/components/AmbientSoundLibrary";
-import ThemeSelector from "@/components/ThemeSelector";
 import EmotionMap from "@/components/EmotionMap";
 import EmotionalIntelligenceCoach from "@/components/EmotionalIntelligenceCoach";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -18,9 +16,6 @@ import { Progress } from "@/components/ui/progress";
 import { AnimatedContainer } from "@/components/ui/animated-container";
 import { motion } from "framer-motion";
 import ShareDialog from "@/components/ShareDialog";
-import GuidedMeditation from "@/components/GuidedMeditation";
-import MusicPlaylistGenerator from "@/components/MusicPlaylistGenerator";
-import DeepWorkGuide from "@/components/DeepWorkGuide";
 
 export default function Home() {
   const { entries, todayAffirmation } = useJournal();
@@ -50,10 +45,6 @@ export default function Home() {
             <DailyChallenge />
           </AnimatedContainer>
 
-          <AnimatedContainer delay={0.3}>
-            <GuidedMeditation />
-          </AnimatedContainer>
-
           <AnimatedContainer delay={0.4}>
             <EmotionalIntelligenceCoach />
           </AnimatedContainer>
@@ -61,24 +52,7 @@ export default function Home() {
           <AnimatedContainer delay={0.5}>
             <EmotionMap entries={entries || []} />
           </AnimatedContainer>
-
-          <AnimatedContainer delay={0.6}>
-            <DeepWorkGuide />
-          </AnimatedContainer>
-
-          <AnimatedContainer delay={0.7}>
-            <AmbientSoundLibrary />
-          </AnimatedContainer>
-
-          <AnimatedContainer delay={0.8}>
-            <MusicPlaylistGenerator />
-          </AnimatedContainer>
-
-          <AnimatedContainer delay={0.9}>
-            <ThemeSelector />
-          </AnimatedContainer>
-
-          <AnimatedContainer delay={1.0}>
+          <AnimatedContainer delay={0.1}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
