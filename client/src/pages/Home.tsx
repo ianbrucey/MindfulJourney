@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useJournal } from "@/hooks/use-journal";
 import { useUser } from "@/hooks/use-user";
 import { useAchievements } from "@/hooks/use-achievements";
-import { PenSquare, Calendar, TrendingUp } from "lucide-react";
+import { PenSquare, Calendar, TrendingUp, Target } from "lucide-react";
 import AffirmationCard from "@/components/AffirmationCard";
 import StreakCounter from "@/components/StreakCounter";
 import AchievementsList from "@/components/AchievementsList";
@@ -38,9 +38,15 @@ export default function Home() {
                 Quick Actions
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               <Link href="/entry">
                 <Button className="w-full">New Journal Entry</Button>
+              </Link>
+              <Link href="/goals">
+                <Button className="w-full" variant="outline">
+                  <Target className="h-4 w-4 mr-2" />
+                  Wellness Goals
+                </Button>
               </Link>
             </CardContent>
           </Card>

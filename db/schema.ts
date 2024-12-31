@@ -55,6 +55,31 @@ export const userAchievements = pgTable("user_achievements", {
   unlockedAt: timestamp("unlocked_at").defaultNow().notNull(),
 });
 
+export const wellnessGoals = pgTable("wellness_goals", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  category: text("category").notNull(), // meditation, exercise, journaling, etc.
+  targetValue: integer("target_value").notNull(), // e.g., number of minutes, sessions, etc.
+  currentValue: integer("current_value").default(0),
+  frequency: text("frequency").notNull(), // daily, weekly, monthly
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"),
+  isCompleted: boolean("is_completed").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const goalProgress = pgTable("goal_progress", {
+  id: serial("id").primaryKey(),
+  goalId: integer("goal_id").notNull().references(() => wellnessGoals.id),
+  value: integer("value").notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Existing schemas
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = typeof users.$inferInsert;
@@ -79,3 +104,14 @@ export const insertUserAchievementSchema = createInsertSchema(userAchievements);
 export const selectUserAchievementSchema = createSelectSchema(userAchievements);
 export type InsertUserAchievement = typeof userAchievements.$inferInsert;
 export type SelectUserAchievement = typeof userAchievements.$inferSelect;
+
+// New schemas for wellness goals
+export const insertWellnessGoalSchema = createInsertSchema(wellnessGoals);
+export const selectWellnessGoalSchema = createSelectSchema(wellnessGoals);
+export type InsertWellnessGoal = typeof wellnessGoals.$inferInsert;
+export type SelectWellnessGoal = typeof wellnessGoals.$inferSelect;
+
+export const insertGoalProgressSchema = createInsertSchema(goalProgress);
+export const selectGoalProgressSchema = createSelectSchema(goalProgress);
+export type InsertGoalProgress = typeof goalProgress.$inferInsert;
+export type SelectGoalProgress = typeof goalProgress.$inferSelect;

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth.js";
 import { db } from "@db";
-import { entries, affirmations, achievements, userAchievements, users } from "@db/schema";
+import { entries, affirmations, achievements, userAchievements, users, wellnessGoals, goalProgress } from "@db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { generateAffirmation, analyzeSentiment } from "./openai.js";
 import type { SelectUser } from "@db/schema";
@@ -196,6 +196,105 @@ export function registerRoutes(app: Express): Server {
       orderBy: [desc(userAchievements.unlockedAt)],
     });
     res.json(unlockedAchievements);
+  });
+
+  // Get user's wellness goals
+  app.get("/api/goals", requireAuth, async (req, res) => {
+    const goals = await db.query.wellnessGoals.findMany({
+      where: eq(wellnessGoals.userId, req.user!.id),
+      orderBy: [desc(wellnessGoals.createdAt)],
+    });
+    res.json(goals);
+  });
+
+  // Create a new wellness goal
+  app.post("/api/goals", requireAuth, async (req, res) => {
+    const [goal] = await db.insert(wellnessGoals)
+      .values({
+        ...req.body,
+        userId: req.user!.id,
+      })
+      .returning();
+    res.json(goal);
+  });
+
+  // Update a wellness goal
+  app.put("/api/goals/:id", requireAuth, async (req, res) => {
+    const [goal] = await db.update(wellnessGoals)
+      .set({
+        ...req.body,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(wellnessGoals.id, parseInt(req.params.id)),
+          eq(wellnessGoals.userId, req.user!.id)
+        )
+      )
+      .returning();
+    res.json(goal);
+  });
+
+  // Record progress for a goal
+  app.post("/api/goals/:id/progress", requireAuth, async (req, res) => {
+    const goalId = parseInt(req.params.id);
+
+    // First, verify the goal belongs to the user
+    const [goal] = await db.query.wellnessGoals.findMany({
+      where: and(
+        eq(wellnessGoals.id, goalId),
+        eq(wellnessGoals.userId, req.user!.id)
+      ),
+    });
+
+    if (!goal) {
+      return res.status(404).send("Goal not found");
+    }
+
+    // Record the progress
+    const [progress] = await db.insert(goalProgress)
+      .values({
+        goalId,
+        value: req.body.value,
+        note: req.body.note,
+      })
+      .returning();
+
+    // Update the current value in the goal
+    const [updatedGoal] = await db.update(wellnessGoals)
+      .set({
+        currentValue: goal.currentValue + req.body.value,
+        isCompleted: goal.currentValue + req.body.value >= goal.targetValue,
+        updatedAt: new Date(),
+      })
+      .where(eq(wellnessGoals.id, goalId))
+      .returning();
+
+    res.json({ progress, goal: updatedGoal });
+  });
+
+  // Get progress history for a goal
+  app.get("/api/goals/:id/progress", requireAuth, async (req, res) => {
+    const goalId = parseInt(req.params.id);
+
+    // First, verify the goal belongs to the user
+    const [goal] = await db.query.wellnessGoals.findMany({
+      where: and(
+        eq(wellnessGoals.id, goalId),
+        eq(wellnessGoals.userId, req.user!.id)
+      ),
+    });
+
+    if (!goal) {
+      return res.status(404).send("Goal not found");
+    }
+
+    const progress = await db.query.goalProgress.findMany({
+      where: eq(goalProgress.goalId, goalId),
+      orderBy: [desc(goalProgress.createdAt)],
+    });
+
+    res.json(progress);
   });
 
   const httpServer = createServer(app);
