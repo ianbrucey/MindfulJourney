@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth.js";
 import { db } from "@db";
-import { entries, affirmations, achievements, userAchievements, users, wellnessGoals, goalProgress, dailyChallenges } from "@db/schema";
+import { entries, affirmations, achievements, userAchievements, users, wellnessGoals, goalProgress, dailyChallenges, supportTopics, supportGroups, groupMemberships, supportMessages } from "@db/schema";
 import { eq, desc, and, gte, lte } from "drizzle-orm";
 import { generateAffirmation, analyzeSentiment, generateDailyChallenge, getFocusMotivation, analyzeEmotionalIntelligence } from "./openai.js";
 import type { SelectUser } from "@db/schema";
@@ -452,6 +452,177 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+
+  // Support Network API Routes
+
+  // Get all support topics
+  app.get("/api/support-topics", requireAuth, async (req, res) => {
+    const topics = await db.query.supportTopics.findMany({
+      orderBy: [supportTopics.name],
+    });
+    res.json(topics);
+  });
+
+  // Get all support groups
+  app.get("/api/support-groups", requireAuth, async (req, res) => {
+    const groups = await db.query.supportGroups.findMany({
+      orderBy: [desc(supportGroups.createdAt)],
+    });
+    res.json(groups);
+  });
+
+  // Create a new support group
+  app.post("/api/support-groups", requireAuth, async (req, res) => {
+    try {
+      // Create the group
+      const [group] = await db.insert(supportGroups)
+        .values({
+          name: req.body.name,
+          description: req.body.description,
+          topicId: req.body.topicId,
+          isPrivate: req.body.isPrivate,
+          maxMembers: req.body.maxMembers,
+        })
+        .returning();
+
+      // Create initial membership for the creator
+      const [membership] = await db.insert(groupMemberships)
+        .values({
+          userId: req.user!.id,
+          groupId: group.id,
+          anonymousName: `Founder-${Math.random().toString(36).substring(2, 8)}`,
+          isAdmin: true,
+        })
+        .returning();
+
+      res.json({ group, membership });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Get user's group memberships
+  app.get("/api/support-groups/memberships", requireAuth, async (req, res) => {
+    const memberships = await db.query.groupMemberships.findMany({
+      where: eq(groupMemberships.userId, req.user!.id),
+      orderBy: [desc(groupMemberships.joinedAt)],
+    });
+    res.json(memberships);
+  });
+
+  // Join a support group
+  app.post("/api/support-groups/:id/join", requireAuth, async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+
+      // Check if user is already a member
+      const existingMembership = await db.query.groupMemberships.findFirst({
+        where: and(
+          eq(groupMemberships.userId, req.user!.id),
+          eq(groupMemberships.groupId, groupId)
+        ),
+      });
+
+      if (existingMembership) {
+        return res.status(400).json({ message: "Already a member of this group" });
+      }
+
+      // Check if group exists and has space
+      const group = await db.query.supportGroups.findFirst({
+        where: eq(supportGroups.id, groupId),
+      });
+
+      if (!group) {
+        return res.status(404).json({ message: "Group not found" });
+      }
+
+      const memberCount = await db.query.groupMemberships.findMany({
+        where: eq(groupMemberships.groupId, groupId),
+      });
+
+      if (memberCount.length >= group.maxMembers) {
+        return res.status(400).json({ message: "Group is full" });
+      }
+
+      // Create membership
+      const [membership] = await db.insert(groupMemberships)
+        .values({
+          userId: req.user!.id,
+          groupId,
+          anonymousName: `Member-${Math.random().toString(36).substring(2, 8)}`,
+          isAdmin: false,
+        })
+        .returning();
+
+      res.json(membership);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Get group messages
+  app.get("/api/support-groups/:id/messages", requireAuth, async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+
+      // Verify user is a member of the group
+      const membership = await db.query.groupMemberships.findFirst({
+        where: and(
+          eq(groupMemberships.userId, req.user!.id),
+          eq(groupMemberships.groupId, groupId)
+        ),
+      });
+
+      if (!membership) {
+        return res.status(403).json({ message: "Not a member of this group" });
+      }
+
+      const messages = await db.query.supportMessages.findMany({
+        where: eq(supportMessages.groupId, groupId),
+        orderBy: [desc(supportMessages.createdAt)],
+      });
+
+      res.json(messages);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Post a message to a group
+  app.post("/api/support-groups/:id/messages", requireAuth, async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+
+      // Verify user is a member of the group
+      const membership = await db.query.groupMemberships.findFirst({
+        where: and(
+          eq(groupMemberships.userId, req.user!.id),
+          eq(groupMemberships.groupId, groupId)
+        ),
+      });
+
+      if (!membership) {
+        return res.status(403).json({ message: "Not a member of this group" });
+      }
+
+      // Analyze sentiment of the message
+      const sentiment = await analyzeSentiment(req.body.content);
+
+      const [message] = await db.insert(supportMessages)
+        .values({
+          groupId,
+          membershipId: membership.id,
+          content: req.body.content,
+          isAnonymous: req.body.isAnonymous ?? true,
+          sentiment,
+        })
+        .returning();
+
+      res.json(message);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
