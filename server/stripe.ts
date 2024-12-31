@@ -4,13 +4,13 @@ import { db } from "@db";
 import { eq } from "drizzle-orm";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-01-01",
+  apiVersion: "2024-12-18.acacia",
 });
 
 const SUBSCRIPTION_PRICES = {
   basic: 'price_free', // Free tier doesn't need a price ID
-  premium: process.env.STRIPE_PREMIUM_PRICE_ID || 'price_test_premium',
-  professional: process.env.STRIPE_PROFESSIONAL_PRICE_ID || 'price_test_professional',
+  premium: 'price_premium',
+  professional: 'price_professional',
 };
 
 export async function createCustomer(user: SelectUser) {
@@ -47,7 +47,7 @@ export async function createSubscription(
     await db.insert(subscriptions).values({
       userId,
       stripeSubscriptionId: subscription.id,
-      planId: 2, // premium plan ID
+      planId: priceId === SUBSCRIPTION_PRICES.premium ? 2 : 3, // premium or professional plan ID
       status: subscription.status,
       startDate: new Date(subscription.current_period_start * 1000),
       endDate: new Date(subscription.current_period_end * 1000),

@@ -175,6 +175,30 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Cancel a subscription
+  app.post("/api/subscription/cancel", requireAuth, async (req, res) => {
+    try {
+      const { subscriptionId } = req.body;
+      const subscription = await cancelSubscription(subscriptionId);
+      res.json(subscription);
+    } catch (error: any) {
+      console.error("Error cancelling subscription:", error);
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Stripe webhook handler
+  app.post("/api/webhook", express.raw({ type: 'application/json' }), async (req, res) => {
+    try {
+      const sig = req.headers['stripe-signature'] as string;
+      await handleWebhook(req.body, sig);
+      res.json({ received: true });
+    } catch (error: any) {
+      console.error("Error handling webhook:", error);
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   // Get all entries for the current user
   app.get("/api/entries", requireAuth, async (req, res) => {
     const userEntries = await db.query.entries.findMany({
