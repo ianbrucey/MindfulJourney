@@ -30,7 +30,7 @@ function App() {
   }
 
   return (
-    <AiAssistantProvider apiKey={process.env.SISTA_AI_SECRET}>
+    <AiAssistantProvider apiKey={import.meta.env.VITE_SISTA_AI_SECRET}>
       <div className="min-h-screen bg-background">
         <Navigation />
         <main className="pt-16 pb-16 md:pb-0">
