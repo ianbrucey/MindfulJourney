@@ -231,9 +231,24 @@ export function registerRoutes(app: Express): Server {
       if (!customerId) {
         const customer = await createCustomer(req.user!);
         customerId = customer.id;
+
+        // Update user with Stripe customer ID
+        await db.update(users)
+          .set({ stripeCustomerId: customerId })
+          .where(eq(users.id, req.user!.id));
       }
 
       const { priceId } = req.body;
+
+      // Validate that the price ID exists in our plans
+      const plan = await db.query.subscriptionPlans.findFirst({
+        where: eq(subscriptionPlans.priceId, priceId),
+      });
+
+      if (!plan) {
+        return res.status(400).json({ error: `Invalid plan selected. Price ID: ${priceId}` });
+      }
+
       const { subscriptionId, clientSecret } = await createSubscription(
         customerId,
         priceId,

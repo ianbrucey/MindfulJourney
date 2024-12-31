@@ -9,7 +9,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 // Price IDs from your Stripe dashboard
 const SUBSCRIPTION_PRICES = {
-  basic: 'price_free', // Free tier doesn't need a price ID
   premium: process.env.STRIPE_PREMIUM_PRICE_ID,
   professional: process.env.STRIPE_PROFESSIONAL_PRICE_ID,
 };
@@ -36,16 +35,16 @@ export async function createSubscription(
 ) {
   try {
     // Map the plan names to actual Stripe price IDs
-    const actualPriceId = Object.entries(SUBSCRIPTION_PRICES).find(
-      ([key]) => `price_${key}` === priceId
-    )?.[1];
-
-    if (!actualPriceId) {
-      throw new Error(`Invalid price ID: ${priceId}`);
-    }
-
-    if (actualPriceId === 'price_free') {
-      throw new Error("Cannot create subscription for free tier");
+    let actualPriceId = priceId;
+    if (priceId === SUBSCRIPTION_PRICES.premium || priceId === SUBSCRIPTION_PRICES.professional) {
+      actualPriceId = priceId;
+    } else {
+      // Check if it matches any of our price IDs
+      const matchingPrice = Object.values(SUBSCRIPTION_PRICES).find(price => price === priceId);
+      if (!matchingPrice) {
+        throw new Error(`Invalid price ID: ${priceId}`);
+      }
+      actualPriceId = matchingPrice;
     }
 
     // Create the subscription
@@ -61,7 +60,7 @@ export async function createSubscription(
     await db.insert(subscriptions).values({
       userId,
       stripeSubscriptionId: subscription.id,
-      planId: priceId === 'price_premium' ? 2 : 3, // premium or professional plan ID
+      planId: priceId === SUBSCRIPTION_PRICES.premium ? 2 : 3, // premium or professional plan ID
       status: subscription.status,
       startDate: new Date(subscription.current_period_start * 1000),
       endDate: new Date(subscription.current_period_end * 1000),
