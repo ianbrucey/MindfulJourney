@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, MessageCircle, Plus } from "lucide-react";
+import { Users, MessageCircle, Plus, Crown, User } from "lucide-react";
 import { AnimatedContainer } from "@/components/ui/animated-container";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -31,6 +31,7 @@ import type {
 } from "@db/schema";
 import { useToast } from "@/hooks/use-toast";
 import ChatInterface from "@/components/support/ChatInterface";
+import { Badge } from "@/components/ui/badge";
 
 const createGroupSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
@@ -110,6 +111,10 @@ export default function SupportNetworkPage() {
     group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     group.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Get user's role for each group
+  const getGroupMembership = (groupId: number) => 
+    memberships.find(m => m.groupId === groupId);
 
   // Separate joined and available groups
   const joinedGroups = filteredGroups.filter(group =>
@@ -231,17 +236,31 @@ export default function SupportNetworkPage() {
               {joinedGroups.length > 0 && (
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium text-muted-foreground mb-2">My Groups</h3>
-                  {joinedGroups.map((group) => (
-                    <Button
-                      key={group.id}
-                      variant={activeGroup?.id === group.id ? "default" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => setActiveGroup(group)}
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      {group.name}
-                    </Button>
-                  ))}
+                  {joinedGroups.map((group) => {
+                    const membership = getGroupMembership(group.id);
+                    return (
+                      <Button
+                        key={group.id}
+                        variant={activeGroup?.id === group.id ? "default" : "ghost"}
+                        className="w-full justify-start"
+                        onClick={() => setActiveGroup(group)}
+                      >
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        <span className="flex-1 text-left">{group.name}</span>
+                        {membership?.isAdmin ? (
+                          <Badge variant="secondary" className="ml-2 gap-1">
+                            <Crown className="h-3 w-3" />
+                            Founder
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="ml-2 gap-1">
+                            <User className="h-3 w-3" />
+                            Member
+                          </Badge>
+                        )}
+                      </Button>
+                    );
+                  })}
                 </div>
               )}
 
