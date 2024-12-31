@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Book, Brain, Settings, Zap, MessageCircle, Gamepad2, Users, CreditCard } from "lucide-react";
+import { Book, Brain, Settings, Zap, MessageCircle, Gamepad2, Users } from "lucide-react";
 
 const routes = [
   { name: "Journal", path: "/", icon: Book },
@@ -9,7 +9,6 @@ const routes = [
   { name: "Talk it out", path: "/talk", icon: MessageCircle },
   { name: "Mini Games", path: "/games", icon: Gamepad2 },
   { name: "Support Network", path: "/support", icon: Users },
-  { name: "Subscription", path: "/subscription", icon: CreditCard },
   { name: "Settings", path: "/settings", icon: Settings },
 ];
 

@@ -8,16 +8,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { AnimatedContainer } from "@/components/ui/animated-container";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/use-user";
+import type { SelectSubscriptionPlan } from "@db/schema";
 
 export default function SubscriptionPage() {
-  const { data: plans = [] } = useQuery({
+  const { data: plans, isLoading, error } = useQuery<SelectSubscriptionPlan[]>({
     queryKey: ["/api/subscription/plans"],
   });
-  
+
   const { user } = useUser();
   const { toast } = useToast();
 
@@ -28,6 +29,29 @@ export default function SubscriptionPage() {
       description: "Subscription functionality will be available soon!",
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card className="bg-destructive/10 border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Error Loading Plans</CardTitle>
+            <CardDescription>
+              {error instanceof Error ? error.message : "Failed to load subscription plans"}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -43,7 +67,7 @@ export default function SubscriptionPage() {
       </AnimatedContainer>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {plans.map((plan, index) => (
+        {(plans || []).map((plan, index) => (
           <AnimatedContainer key={plan.id} delay={index * 0.1}>
             <Card className={`relative ${plan.name === 'premium' ? 'border-primary/50 shadow-lg' : ''}`}>
               {plan.name === 'premium' && (
@@ -62,7 +86,7 @@ export default function SubscriptionPage() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3">
-                  {plan.features.map((feature, i) => (
+                  {(plan.features || []).map((feature, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                       <span>{feature}</span>
@@ -77,6 +101,9 @@ export default function SubscriptionPage() {
                   onClick={() => handleSubscribe(plan.name)}
                   disabled={user?.subscriptionTier === plan.name}
                 >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : null}
                   {user?.subscriptionTier === plan.name ? 'Current Plan' : 'Subscribe'}
                 </Button>
               </CardFooter>

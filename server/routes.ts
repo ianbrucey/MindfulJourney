@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { db } from "@db";
 import { entries, affirmations, achievements, userAchievements, users, wellnessGoals, goalProgress, dailyChallenges, supportTopics, supportGroups, groupMemberships, supportMessages, subscriptionPlans } from "@db/schema";
-import { eq, desc, and, gte } from "drizzle-orm"; // Import gte operator
+import { eq, desc, and, gte } from "drizzle-orm";
 import { generateAffirmation, analyzeSentiment, generateDailyChallenge, getFocusMotivation, analyzeEmotionalIntelligence, analyzeChatSentiment } from "./openai";
 import type { SelectUser } from "@db/schema";
 import fs from "fs/promises";
@@ -122,9 +122,9 @@ async function updateStreakAndCheckAchievements(userId: number) {
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
   initializeAchievements();
-  initializeSubscriptionPlans();
+  initializeSubscriptionPlans(); // Initialize subscription plans
 
-  // New subscription routes
+  // Subscription routes
   app.get("/api/subscription/plans", async (req, res) => {
     const plans = await db.query.subscriptionPlans.findMany({
       orderBy: [subscriptionPlans.price],
