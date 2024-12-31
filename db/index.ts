@@ -8,8 +8,16 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const db = drizzle({
-  connection: process.env.DATABASE_URL,
+// Configure database with proper connection handling
+export const db = drizzle(process.env.DATABASE_URL, {
   schema,
-  ws: ws,
+  // WebSocket support for Neon serverless driver
+  webSocket: {
+    client: ws,
+    retryConnectAttempts: 3,
+    retryConnectInterval: 1000
+  }
 });
+
+// Export schema types for use in other parts of the application
+export type Schema = typeof schema;
