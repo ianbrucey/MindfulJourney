@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
+import { AnimatedList, AnimatedListItem } from "@/components/ui/animated-container";
+import { motion } from "framer-motion";
 
 const themes = [
   {
@@ -72,29 +74,38 @@ export default function ThemeSelector() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <AnimatedList className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {themes.map((theme) => {
             const Icon = theme.icon;
             return (
-              <Button
-                key={theme.id}
-                variant="outline"
-                className="flex flex-col items-center gap-2 h-auto py-4 px-2 hover:bg-accent transition-colors"
-                onClick={() => {
-                  setTheme({
-                    primary: theme.primary,
-                    variant: theme.variant,
-                    appearance: "light",
-                    radius: 0.5,
-                  });
-                }}
-              >
-                <Icon className="h-8 w-8" style={{ color: theme.primary }} />
-                <span className="text-sm font-medium text-center">{theme.name}</span>
-              </Button>
+              <AnimatedListItem key={theme.id}>
+                <Button
+                  variant="outline"
+                  className="flex flex-col items-center gap-2 h-auto py-4 px-2 hover:bg-accent transition-all duration-300 group w-full"
+                  onClick={() => {
+                    setTheme({
+                      primary: theme.primary,
+                      variant: theme.variant,
+                      appearance: "light",
+                      radius: 0.5,
+                    });
+                  }}
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Icon className="h-8 w-8 transition-colors duration-300" style={{ color: theme.primary }} />
+                  </motion.div>
+                  <span className="text-sm font-medium text-center group-hover:text-primary transition-colors duration-300">
+                    {theme.name}
+                  </span>
+                </Button>
+              </AnimatedListItem>
             );
           })}
-        </div>
+        </AnimatedList>
       </CardContent>
     </Card>
   );
