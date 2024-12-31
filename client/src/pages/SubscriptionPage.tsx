@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,6 +13,63 @@ import { AnimatedContainer } from "@/components/ui/animated-container";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/use-user";
 import type { SelectSubscriptionPlan } from "@db/schema";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { useState } from "react";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
+function CheckoutForm({ clientSecret }: { clientSecret: string }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/settings`,
+        },
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <PaymentElement />
+      <Button className="w-full mt-4" disabled={!stripe || isLoading}>
+        {isLoading ? (
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+        ) : (
+          "Subscribe"
+        )}
+      </Button>
+    </form>
+  );
+}
 
 export default function SubscriptionPage() {
   const { data: plans, isLoading, error } = useQuery<SelectSubscriptionPlan[]>({
@@ -21,13 +78,46 @@ export default function SubscriptionPage() {
 
   const { user } = useUser();
   const { toast } = useToast();
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
-  const handleSubscribe = async (planName: string) => {
-    // TODO: Implement subscription logic
-    toast({
-      title: "Coming Soon",
-      description: "Subscription functionality will be available soon!",
-    });
+  const createSubscriptionMutation = useMutation({
+    mutationFn: async (planId: string) => {
+      const response = await fetch("/api/subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId: planId }),
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setClientSecret(data.clientSecret);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubscribe = async (planName: string, priceId: string) => {
+    if (planName === 'basic') {
+      toast({
+        title: "Basic Plan",
+        description: "You're already on the basic plan!",
+      });
+      return;
+    }
+
+    setSelectedPlan(planName);
+    createSubscriptionMutation.mutate(priceId);
   };
 
   if (isLoading) {
@@ -95,17 +185,31 @@ export default function SubscriptionPage() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button
-                  className="w-full"
-                  variant={plan.name === 'premium' ? 'default' : 'outline'}
-                  onClick={() => handleSubscribe(plan.name)}
-                  disabled={user?.subscriptionTier === plan.name}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : null}
-                  {user?.subscriptionTier === plan.name ? 'Current Plan' : 'Subscribe'}
-                </Button>
+                {clientSecret && selectedPlan === plan.name ? (
+                  <div className="w-full">
+                    <Elements
+                      stripe={stripePromise}
+                      options={{
+                        clientSecret,
+                        appearance: { theme: 'stripe' },
+                      }}
+                    >
+                      <CheckoutForm clientSecret={clientSecret} />
+                    </Elements>
+                  </div>
+                ) : (
+                  <Button
+                    className="w-full"
+                    variant={plan.name === 'premium' ? 'default' : 'outline'}
+                    onClick={() => handleSubscribe(plan.name, `price_${plan.name}`)}
+                    disabled={user?.subscriptionTier === plan.name}
+                  >
+                    {createSubscriptionMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : null}
+                    {user?.subscriptionTier === plan.name ? 'Current Plan' : 'Subscribe'}
+                  </Button>
+                )}
               </CardFooter>
             </Card>
           </AnimatedContainer>

@@ -6,6 +6,7 @@ export const users = pgTable("users", {
   username: text("username").unique().notNull(),
   password: text("password").notNull(),
   email: text("email").unique(),
+  stripeCustomerId: text("stripe_customer_id").unique(),
   emailNotifications: boolean("email_notifications").default(false),
   currentStreak: integer("current_streak").default(0),
   longestStreak: integer("longest_streak").default(0),
@@ -94,7 +95,6 @@ export const goalProgress = pgTable("goal_progress", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Add subscription plans table
 export const subscriptionPlans = pgTable("subscription_plans", {
   id: serial("id").primaryKey(),
   name: text("name").unique().notNull(),
@@ -105,19 +105,18 @@ export const subscriptionPlans = pgTable("subscription_plans", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Add subscriptions table to track user subscriptions
 export const subscriptions = pgTable("subscriptions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   planId: integer("plan_id").notNull().references(() => subscriptionPlans.id),
-  status: text("status").notNull(), // active, cancelled, expired
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
+  status: text("status").notNull(), 
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date"),
   cancelledAt: timestamp("cancelled_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Support Network Tables
 export const supportTopics = pgTable("support_topics", {
   id: serial("id").primaryKey(),
   name: text("name").unique().notNull(),
@@ -165,7 +164,6 @@ export const supportMessages = pgTable("support_messages", {
   }>(),
 });
 
-// Schemas and types for all tables
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = typeof users.$inferInsert;
@@ -206,7 +204,6 @@ export const selectGoalProgressSchema = createSelectSchema(goalProgress);
 export type InsertGoalProgress = typeof goalProgress.$inferInsert;
 export type SelectGoalProgress = typeof goalProgress.$inferSelect;
 
-// Support network schemas
 export const insertSupportTopicSchema = createInsertSchema(supportTopics);
 export const selectSupportTopicSchema = createSelectSchema(supportTopics);
 export type InsertSupportTopic = typeof supportTopics.$inferInsert;
@@ -227,7 +224,6 @@ export const selectSupportMessageSchema = createSelectSchema(supportMessages);
 export type InsertSupportMessage = typeof supportMessages.$inferInsert;
 export type SelectSupportMessage = typeof supportMessages.$inferSelect;
 
-// Add new schemas for subscription-related tables
 export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans);
 export const selectSubscriptionPlanSchema = createSelectSchema(subscriptionPlans);
 export type InsertSubscriptionPlan = typeof subscriptionPlans.$inferInsert;

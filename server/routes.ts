@@ -10,6 +10,9 @@ import fs from "fs/promises";
 import path from "path";
 import { randomBytes } from "crypto";
 import { initializeSubscriptionPlans, checkAIRequestLimit, checkGroupLimit } from "./subscription";
+import { createCustomer, createSubscription, cancelSubscription, handleWebhook } from "./stripe";
+import type { Buffer } from "node:buffer";
+import express from "express";
 
 // Extend Express.User type
 declare global {
@@ -17,6 +20,14 @@ declare global {
     interface User extends SelectUser {}
   }
 }
+
+// Middleware to check if user is authenticated
+const requireAuth = (req: any, res: any, next: any) => {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).send("Not authenticated");
+};
 
 const INITIAL_ACHIEVEMENTS = [
   {
@@ -122,7 +133,7 @@ async function updateStreakAndCheckAchievements(userId: number) {
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
   initializeAchievements();
-  initializeSubscriptionPlans(); // Initialize subscription plans
+  initializeSubscriptionPlans();
 
   // Subscription routes
   app.get("/api/subscription/plans", async (req, res) => {
@@ -132,13 +143,37 @@ export function registerRoutes(app: Express): Server {
     res.json(plans);
   });
 
-  // Middleware to check if user is authenticated
-  const requireAuth = (req: any, res: any, next: any) => {
-    if (req.isAuthenticated()) {
-      return next();
+  // Get Stripe publishable key
+  app.get("/api/subscription/config", (req, res) => {
+    res.json({ publishableKey: process.env.STRIPE_PUBLISHABLE_KEY });
+  });
+
+  // Create a subscription
+  app.post("/api/subscription", requireAuth, async (req, res) => {
+    try {
+      if (!req.user!.email) {
+        return res.status(400).send("Email required for subscription");
+      }
+
+      let customerId = req.user!.stripeCustomerId;
+      if (!customerId) {
+        const customer = await createCustomer(req.user!);
+        customerId = customer.id;
+      }
+
+      const { priceId } = req.body;
+      const { subscriptionId, clientSecret } = await createSubscription(
+        customerId,
+        priceId,
+        req.user!.id
+      );
+
+      res.json({ subscriptionId, clientSecret });
+    } catch (error: any) {
+      console.error("Error creating subscription:", error);
+      res.status(400).json({ error: error.message });
     }
-    res.status(401).send("Not authenticated");
-  };
+  });
 
   // Get all entries for the current user
   app.get("/api/entries", requireAuth, async (req, res) => {
