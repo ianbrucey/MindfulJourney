@@ -12,6 +12,7 @@ import SettingsPage from "@/pages/SettingsPage";
 import TalkItOutPage from "@/pages/TalkItOutPage";
 import Navigation from "@/components/Navigation";
 import { Toaster } from "@/components/ui/toaster";
+import { AiAssistantProvider } from "@sista/ai-assistant-react";
 
 function App() {
   const { user, isLoading } = useUser();
@@ -29,22 +30,24 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <main className="pt-16 pb-16 md:pb-0">
-        <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/entry/:id?" component={JournalEntry} />
-          <Route path="/goals" component={WellnessGoals} />
-          <Route path="/meditation" component={MeditationPage} />
-          <Route path="/productivity" component={ProductivityPage} />
-          <Route path="/talk" component={TalkItOutPage} />
-          <Route path="/settings" component={SettingsPage} />
-          <Route component={NotFound} />
-        </Switch>
-      </main>
-      <Toaster />
-    </div>
+    <AiAssistantProvider apiKey={import.meta.env.VITE_SISTA_AI_API_KEY}>
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <main className="pt-16 pb-16 md:pb-0">
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/entry/:id?" component={JournalEntry} />
+            <Route path="/goals" component={WellnessGoals} />
+            <Route path="/meditation" component={MeditationPage} />
+            <Route path="/productivity" component={ProductivityPage} />
+            <Route path="/talk" component={TalkItOutPage} />
+            <Route path="/settings" component={SettingsPage} />
+            <Route component={NotFound} />
+          </Switch>
+        </main>
+        <Toaster />
+      </div>
+    </AiAssistantProvider>
   );
 }
 
