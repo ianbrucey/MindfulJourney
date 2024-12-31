@@ -37,7 +37,7 @@ declare module 'express-session' {
 export function setupAuth(app: Express) {
   const MemoryStore = createMemoryStore(session);
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.REPL_ID || "mindful-journal-secret",
+    secret: process.env.REPL_ID || "mindful-journey-secret",
     resave: false,
     saveUninitialized: false,
     cookie: {},
@@ -99,9 +99,15 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const { username, password } = req.body;
+      const { username, password, email, firstName, lastName } = req.body;
       const returnTo = req.session.returnTo || '/';
 
+      // Validate required fields
+      if (!username || !password || !email || !firstName || !lastName) {
+        return res.status(400).send("All fields are required");
+      }
+
+      // Check if user already exists
       const [existingUser] = await db
         .select()
         .from(users)
@@ -112,6 +118,17 @@ export function setupAuth(app: Express) {
         return res.status(400).send("Username already exists");
       }
 
+      // Check if email already exists
+      const [existingEmail] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (existingEmail) {
+        return res.status(400).send("Email already exists");
+      }
+
       const hashedPassword = await crypto.hash(password);
 
       const [newUser] = await db
@@ -119,6 +136,9 @@ export function setupAuth(app: Express) {
         .values({
           username,
           password: hashedPassword,
+          email,
+          firstName,
+          lastName,
         })
         .returning();
 
@@ -131,6 +151,7 @@ export function setupAuth(app: Express) {
         return res.json({ ok: true, redirectTo: returnTo });
       });
     } catch (error) {
+      console.error("Registration error:", error);
       next(error);
     }
   });
