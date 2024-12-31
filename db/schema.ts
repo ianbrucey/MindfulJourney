@@ -101,6 +101,7 @@ export const subscriptionPlans = pgTable("subscription_plans", {
   id: serial("id").primaryKey(),
   name: text("name").unique().notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  priceId: text("price_id").unique(),
   features: json("features").$type<string[]>(),
   aiRequestsLimit: integer("ai_requests_limit"),
   groupLimit: integer("group_limit"),

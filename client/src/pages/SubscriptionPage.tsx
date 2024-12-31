@@ -117,7 +117,7 @@ export default function SubscriptionPage() {
     },
   });
 
-  const handleSubscribe = async (planName: string, priceId: string) => {
+  const handleSubscribe = async (planName: string) => {
     if (planName === 'basic') {
       toast({
         title: "Basic Plan",
@@ -126,8 +126,18 @@ export default function SubscriptionPage() {
       return;
     }
 
+    const selectedPlan = plans?.find(p => p.name === planName);
+    if (!selectedPlan?.priceId) {
+      toast({
+        title: "Error",
+        description: "Invalid plan selected",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSelectedPlan(planName);
-    createSubscriptionMutation.mutate(priceId);
+    createSubscriptionMutation.mutate(selectedPlan.priceId);
   };
 
   if (isLoading) {
@@ -211,7 +221,7 @@ export default function SubscriptionPage() {
                   <Button
                     className="w-full"
                     variant={plan.name === 'premium' ? 'default' : 'outline'}
-                    onClick={() => handleSubscribe(plan.name, `price_${plan.name}`)}
+                    onClick={() => handleSubscribe(plan.name)}
                     disabled={user?.subscriptionTier === plan.name}
                   >
                     {createSubscriptionMutation.isPending ? (

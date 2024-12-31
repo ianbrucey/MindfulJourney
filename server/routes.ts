@@ -13,6 +13,7 @@ import { initializeSubscriptionPlans, checkAIRequestLimit, checkGroupLimit } fro
 import { createCustomer, createSubscription, cancelSubscription, handleWebhook } from "./stripe";
 import type { Buffer } from "node:buffer";
 import express from "express";
+import Decimal from 'decimal.js';
 
 // Extend Express.User type
 declare global {
@@ -130,10 +131,71 @@ async function updateStreakAndCheckAchievements(userId: number) {
   }
 }
 
+// Modify only the initializeSubscriptionPlans function
+async function initializeSubscriptionPlans() {
+  try {
+    // Delete any existing plans to ensure clean state
+    await db.delete(subscriptionPlans);
+
+    // Insert fresh plans with correct price IDs
+    await db.insert(subscriptionPlans).values([
+      {
+        name: 'basic',
+        price: new Decimal(0),
+        priceId: 'price_free',
+        features: [
+          'Basic journaling',
+          'Join up to 2 support groups',
+          'Basic mood tracking',
+          'Limited AI features (20 requests/month)'
+        ],
+        aiRequestsLimit: 20,
+        groupLimit: 2
+      },
+      {
+        name: 'premium',
+        price: new Decimal(14.99),
+        priceId: process.env.STRIPE_PREMIUM_PRICE_ID,
+        features: [
+          'Unlimited AI-powered journaling',
+          'Advanced sentiment analysis',
+          'Unlimited support groups',
+          'Focus motivation chat',
+          'Advanced analytics',
+          'Custom themes',
+          'Ad-free experience'
+        ],
+        aiRequestsLimit: -1,
+        groupLimit: -1
+      },
+      {
+        name: 'professional',
+        price: new Decimal(29.99),
+        priceId: process.env.STRIPE_PROFESSIONAL_PRICE_ID,
+        features: [
+          'All Premium features',
+          'Priority support',
+          'Group founder privileges',
+          'Advanced emotional intelligence',
+          'Custom guided meditations',
+          'Personal wellness coach',
+          'Advanced goal tracking',
+          'API access'
+        ],
+        aiRequestsLimit: -1,
+        groupLimit: -1
+      }
+    ]);
+  } catch (error) {
+    console.error('Error initializing subscription plans:', error);
+    throw error;
+  }
+}
+
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
   initializeAchievements();
-  initializeSubscriptionPlans();
+  initializeSubscriptionPlans(); // Make sure this is called
 
   // Subscription routes
   app.get("/api/subscription/plans", async (req, res) => {
