@@ -1,10 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth } from "./auth.js";
+import { setupAuth } from "./auth";
 import { db } from "@db";
 import { entries, affirmations, achievements, userAchievements, users, wellnessGoals, goalProgress, dailyChallenges, supportTopics, supportGroups, groupMemberships, supportMessages } from "@db/schema";
-import { eq, desc, and, gte } from "drizzle-orm";
-import { generateAffirmation, analyzeSentiment, generateDailyChallenge, getFocusMotivation, analyzeEmotionalIntelligence, analyzeChatSentiment } from "./openai.js";
+import { eq, desc, and, gte } from "drizzle-orm"; // Import gte operator
+import { generateAffirmation, analyzeSentiment, generateDailyChallenge, getFocusMotivation, analyzeEmotionalIntelligence, analyzeChatSentiment } from "./openai";
 import type { SelectUser } from "@db/schema";
 import fs from "fs/promises";
 import path from "path";
@@ -330,44 +330,49 @@ export function registerRoutes(app: Express): Server {
 
   // Get today's challenge
   app.get("/api/challenges/today", requireAuth, async (req, res) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-    // Check if user already has a challenge for today
-    let [todayChallenge] = await db.query.dailyChallenges.findMany({
-      where: and(
-        eq(dailyChallenges.userId, req.user!.id),
-        gte(dailyChallenges.createdAt, today)
-      ),
-      limit: 1,
-    });
-
-    if (!todayChallenge) {
-      // Get recent entries and active goals to personalize the challenge
-      const recentEntries = await db.query.entries.findMany({
-        where: eq(entries.userId, req.user!.id),
-        orderBy: [desc(entries.createdAt)],
-        limit: 5,
-      });
-
-      const activeGoals = await db.query.wellnessGoals.findMany({
+      // Check if user already has a challenge for today
+      let [todayChallenge] = await db.query.dailyChallenges.findMany({
         where: and(
-          eq(wellnessGoals.userId, req.user!.id),
-          eq(wellnessGoals.isCompleted, false)
+          eq(dailyChallenges.userId, req.user!.id),
+          gte(dailyChallenges.createdAt, today)
         ),
+        limit: 1,
       });
 
-      const challenge = await generateDailyChallenge(recentEntries, activeGoals);
+      if (!todayChallenge) {
+        // Get recent entries and active goals to personalize the challenge
+        const recentEntries = await db.query.entries.findMany({
+          where: eq(entries.userId, req.user!.id),
+          orderBy: [desc(entries.createdAt)],
+          limit: 5,
+        });
 
-      [todayChallenge] = await db.insert(dailyChallenges)
-        .values({
-          userId: req.user!.id,
-          ...challenge,
-        })
-        .returning();
+        const activeGoals = await db.query.wellnessGoals.findMany({
+          where: and(
+            eq(wellnessGoals.userId, req.user!.id),
+            eq(wellnessGoals.isCompleted, false)
+          ),
+        });
+
+        const challenge = await generateDailyChallenge(recentEntries, activeGoals);
+
+        [todayChallenge] = await db.insert(dailyChallenges)
+          .values({
+            userId: req.user!.id,
+            ...challenge,
+          })
+          .returning();
+      }
+
+      res.json(todayChallenge);
+    } catch (error: any) {
+      console.error("Error getting today's challenge:", error);
+      res.status(500).json({ message: error.message });
     }
-
-    res.json(todayChallenge);
   });
 
   // Complete a challenge
@@ -601,7 +606,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Join group with invite code
+  // Update the join group with invite code endpoint
   app.post("/api/support-groups/join/:inviteCode", requireAuth, async (req, res) => {
     try {
       // Find group by invite code
@@ -622,7 +627,12 @@ export function registerRoutes(app: Express): Server {
       });
 
       if (existingMembership) {
-        return res.status(400).json({ message: "Already a member of this group" });
+        // If already a member, return success with the existing membership
+        return res.json({
+          message: "Already a member",
+          membership: existingMembership,
+          alreadyMember: true
+        });
       }
 
       // Check if group is full
@@ -646,7 +656,11 @@ export function registerRoutes(app: Express): Server {
         })
         .returning();
 
-      res.json(membership);
+      res.json({
+        message: "Successfully joined the group",
+        membership,
+        alreadyMember: false
+      });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }

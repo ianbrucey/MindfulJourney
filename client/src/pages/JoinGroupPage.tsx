@@ -22,15 +22,18 @@ export default function JoinGroupPage() {
       });
 
       if (!response.ok) {
-        throw new Error(await response.text());
+        const errorText = await response.text();
+        throw new Error(errorText);
       }
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Success",
-        description: "You have joined the group successfully!",
+        description: data.alreadyMember 
+          ? "You're already a member of this group"
+          : "You have joined the group successfully!",
       });
       setLocation("/support");
     },
