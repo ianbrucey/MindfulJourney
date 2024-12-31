@@ -26,7 +26,32 @@ import { motion } from "framer-motion";
 import * as Tone from "tone";
 import WaveformVisualizer from "./WaveformVisualizer";
 
-const soundLibrary = [
+type NoiseType = "white" | "pink" | "brown";
+
+interface SoundLayer {
+  type: NoiseType;
+  frequency: number;
+  volume: number;
+  filter: {
+    frequency: number;
+    Q: number;
+  };
+}
+
+interface SoundPreset {
+  id: string;
+  name: string;
+  icon: React.ElementType;
+  description: string;
+  sounds: SoundLayer[];
+  lfoSettings: {
+    frequency: number;
+    min: number;
+    max: number;
+  };
+}
+
+const soundLibrary: SoundPreset[] = [
   {
     id: "forest-day",
     name: "Daytime Forest",
@@ -129,7 +154,7 @@ export default function AmbientSoundLibrary() {
     // Create layered sound generators for the current preset
     currentSound.sounds.forEach(sound => {
       const noise = new Tone.Noise({
-        type: sound.type as "white" | "pink" | "brown",
+        type: sound.type,
         volume: Tone.gainToDb(volume / 100) + sound.volume,
       });
 
