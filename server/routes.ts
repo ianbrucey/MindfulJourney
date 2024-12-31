@@ -3,11 +3,12 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth.js";
 import { db } from "@db";
 import { entries, affirmations, achievements, userAchievements, users, wellnessGoals, goalProgress, dailyChallenges, supportTopics, supportGroups, groupMemberships, supportMessages } from "@db/schema";
-import { eq, desc, and, gte, lte } from "drizzle-orm";
-import { generateAffirmation, analyzeSentiment, generateDailyChallenge, getFocusMotivation, analyzeEmotionalIntelligence } from "./openai.js";
+import { eq, desc, and } from "drizzle-orm";
+import { generateAffirmation, analyzeSentiment, generateDailyChallenge, getFocusMotivation, analyzeEmotionalIntelligence, analyzeChatSentiment } from "./openai.js";
 import type { SelectUser } from "@db/schema";
 import fs from "fs/promises";
 import path from "path";
+import { randomBytes } from "crypto";
 
 // Extend Express.User type
 declare global {
@@ -492,6 +493,8 @@ export function registerRoutes(app: Express): Server {
           groupId: group.id,
           anonymousName: `Founder-${Math.random().toString(36).substring(2, 8)}`,
           isAdmin: true,
+          role: 'admin',
+          permissions: ['manage_members', 'send_messages', 'read_messages', 'moderate_messages']
         })
         .returning();
 
@@ -540,7 +543,7 @@ export function registerRoutes(app: Express): Server {
         where: eq(groupMemberships.groupId, groupId),
       });
 
-      if (memberCount.length >= group.maxMembers) {
+      if (memberCount.length >= (group.maxMembers ?? 50)) {
         return res.status(400).json({ message: "Group is full" });
       }
 
@@ -551,10 +554,138 @@ export function registerRoutes(app: Express): Server {
           groupId,
           anonymousName: `Member-${Math.random().toString(36).substring(2, 8)}`,
           isAdmin: false,
+          role: 'member',
+          permissions: ['send_messages', 'read_messages']
         })
         .returning();
 
       res.json(membership);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Generate invite link for a group
+  app.post("/api/support-groups/:id/invite", requireAuth, async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+
+      // Check if user is admin of the group
+      const membership = await db.query.groupMemberships.findFirst({
+        where: and(
+          eq(groupMemberships.userId, req.user!.id),
+          eq(groupMemberships.groupId, groupId),
+          eq(groupMemberships.isAdmin, true)
+        ),
+      });
+
+      if (!membership) {
+        return res.status(403).json({ message: "Only group admins can generate invite links" });
+      }
+
+      // Generate a unique invite code
+      const inviteCode = randomBytes(16).toString('hex');
+
+      // Update the group with the new invite code
+      const [group] = await db.update(supportGroups)
+        .set({ inviteCode })
+        .where(eq(supportGroups.id, groupId))
+        .returning();
+
+      res.json({
+        inviteCode: group.inviteCode,
+        inviteLink: `/join/${group.inviteCode}`
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Join group with invite code
+  app.post("/api/support-groups/join/:inviteCode", requireAuth, async (req, res) => {
+    try {
+      // Find group by invite code
+      const [group] = await db.query.supportGroups.findMany({
+        where: eq(supportGroups.inviteCode, req.params.inviteCode),
+      });
+
+      if (!group) {
+        return res.status(404).json({ message: "Invalid invite code" });
+      }
+
+      // Check if user is already a member
+      const existingMembership = await db.query.groupMemberships.findFirst({
+        where: and(
+          eq(groupMemberships.userId, req.user!.id),
+          eq(groupMemberships.groupId, group.id)
+        ),
+      });
+
+      if (existingMembership) {
+        return res.status(400).json({ message: "Already a member of this group" });
+      }
+
+      // Check if group is full
+      const memberCount = await db.query.groupMemberships.findMany({
+        where: eq(groupMemberships.groupId, group.id),
+      });
+
+      if (memberCount.length >= (group.maxMembers ?? 50)) {
+        return res.status(400).json({ message: "Group is full" });
+      }
+
+      // Create membership
+      const [membership] = await db.insert(groupMemberships)
+        .values({
+          userId: req.user!.id,
+          groupId: group.id,
+          anonymousName: `Member-${Math.random().toString(36).substring(2, 8)}`,
+          role: 'member',
+          permissions: ['send_messages', 'read_messages'],
+          isAdmin: false,
+        })
+        .returning();
+
+      res.json(membership);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Update member role
+  app.put("/api/support-groups/:groupId/members/:memberId/role", requireAuth, async (req, res) => {
+    try {
+      const { groupId, memberId } = req.params;
+      const { role } = req.body;
+
+      // Verify requester is admin
+      const requesterMembership = await db.query.groupMemberships.findFirst({
+        where: and(
+          eq(groupMemberships.userId, req.user!.id),
+          eq(groupMemberships.groupId, parseInt(groupId)),
+          eq(groupMemberships.isAdmin, true)
+        ),
+      });
+
+      if (!requesterMembership) {
+        return res.status(403).json({ message: "Only admins can modify roles" });
+      }
+
+      // Update member's role
+      const [updatedMembership] = await db.update(groupMemberships)
+        .set({
+          role,
+          isAdmin: role === 'admin',
+          permissions: role === 'admin'
+            ? ['manage_members', 'send_messages', 'read_messages', 'moderate_messages']
+            : role === 'moderator'
+              ? ['send_messages', 'read_messages', 'moderate_messages']
+              : ['send_messages', 'read_messages']
+        })
+        .where(eq(groupMemberships.id, parseInt(memberId)))
+        .returning();
+
+      res.json(updatedMembership);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -606,7 +737,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Analyze sentiment of the message
-      const sentiment = await analyzeSentiment(req.body.content);
+      const sentiment = await analyzeChatSentiment(req.body.content);
 
       const [message] = await db.insert(supportMessages)
         .values({

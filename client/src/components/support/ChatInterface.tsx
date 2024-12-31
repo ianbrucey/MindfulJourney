@@ -10,7 +10,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import type { SelectSupportMessage, SelectSupportGroup, SelectGroupMembership } from "@db/schema";
-import { MessageCircle, UserPlus } from "lucide-react";
+import { MessageCircle, UserPlus, Link as LinkIcon } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface ChatInterfaceProps {
   group: SelectSupportGroup;
@@ -19,6 +26,7 @@ interface ChatInterfaceProps {
 export default function ChatInterface({ group }: ChatInterfaceProps) {
   const [message, setMessage] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(true);
+  const [inviteLink, setInviteLink] = useState("");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -32,7 +40,9 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
     queryKey: ["/api/support-groups/memberships"],
   });
 
-  const isMember = memberships.some(m => m.groupId === group.id);
+  const currentMembership = memberships.find(m => m.groupId === group.id);
+  const isMember = !!currentMembership;
+  const isAdmin = currentMembership?.isAdmin;
 
   const joinGroupMutation = useMutation({
     mutationFn: async () => {
@@ -54,6 +64,36 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
       toast({
         title: "Success",
         description: "You have joined the group!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const generateInviteMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/support-groups/${group.id}/invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      const baseUrl = window.location.origin;
+      setInviteLink(`${baseUrl}/join/${data.inviteCode}`);
+      toast({
+        title: "Success",
+        description: "Invite link generated successfully!",
       });
     },
     onError: (error) => {
@@ -107,6 +147,14 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
     await sendMessageMutation.mutate(message);
   };
 
+  const copyInviteLink = () => {
+    navigator.clipboard.writeText(inviteLink);
+    toast({
+      title: "Success",
+      description: "Invite link copied to clipboard!",
+    });
+  };
+
   if (!isMember) {
     return (
       <div className="flex flex-col items-center justify-center h-[400px] space-y-4">
@@ -126,6 +174,30 @@ export default function ChatInterface({ group }: ChatInterfaceProps) {
 
   return (
     <div className="flex flex-col h-[600px]">
+      {isAdmin && (
+        <div className="p-4 border-b">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" onClick={() => generateInviteMutation.mutate()}>
+                <LinkIcon className="h-4 w-4 mr-2" />
+                Generate Invite Link
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Group Invite Link</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-4">
+                <Input value={inviteLink} readOnly />
+                <Button onClick={copyInviteLink} className="w-full">
+                  Copy Link
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
+
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         {messages.map((msg) => (
           <div

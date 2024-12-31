@@ -107,6 +107,7 @@ export const supportGroups = pgTable("support_groups", {
   topicId: integer("topic_id").references(() => supportTopics.id),
   isPrivate: boolean("is_private").default(false),
   maxMembers: integer("max_members").default(50),
+  inviteCode: text("invite_code").unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -116,6 +117,8 @@ export const groupMemberships = pgTable("group_memberships", {
   userId: integer("user_id").notNull().references(() => users.id),
   groupId: integer("group_id").notNull().references(() => supportGroups.id),
   anonymousName: text("anonymous_name").notNull(),
+  role: text("role").notNull().default('member'),
+  permissions: text("permissions").array(),
   isAdmin: boolean("is_admin").default(false),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
   lastActive: timestamp("last_active"),

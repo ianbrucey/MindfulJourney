@@ -3,6 +3,113 @@ import OpenAI from "openai";
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Support message sentiment analysis
+export async function analyzeChatSentiment(content: string): Promise<{
+  score: number;
+  tone: string;
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are an empathetic AI analyzing the sentiment of messages in a support group context.
+          Analyze the sentiment and emotional tone of the message.
+          Respond with JSON containing:
+          - score: sentiment score (1-5, where 1 is very negative and 5 is very positive)
+          - tone: a single word describing the emotional tone (e.g., supportive, anxious, hopeful, etc.)`
+        },
+        {
+          role: "user",
+          content
+        }
+      ],
+      response_format: { type: "json_object" }
+    });
+
+    const result = JSON.parse(response.choices[0]?.message?.content || "{}");
+    return {
+      score: Math.max(1, Math.min(5, result.score ?? 3)),
+      tone: result.tone ?? "neutral"
+    };
+  } catch (error) {
+    console.error("Error analyzing chat sentiment:", error);
+    return {
+      score: 3,
+      tone: "neutral"
+    };
+  }
+}
+
+// Journal entry sentiment analysis
+export async function analyzeSentiment(content: string): Promise<{
+  sentiment: {
+    score: number;
+    label: string;
+  };
+  themes: string[];
+  insights: string;
+  recommendations: Array<{
+    activity: string;
+    reason: string;
+    duration: string;
+    benefit: string;
+  }>;
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are an empathetic AI therapist analyzing journal entries. 
+          Analyze the sentiment, emotional themes, provide personalized insights, and suggest self-care activities.
+          Respond with a JSON object containing:
+          - sentiment: { score (1-5, where 1 is very negative and 5 is very positive), label (descriptive word) }
+          - themes: array of emotional themes present
+          - insights: a brief, personalized insight about the entry
+          - recommendations: array of recommended self-care activities, each containing:
+            - activity: specific activity name
+            - reason: why this activity would be helpful based on the entry
+            - duration: suggested time commitment (e.g. "5 minutes", "30 minutes")
+            - benefit: expected benefit from doing this activity`,
+        },
+        {
+          role: "user",
+          content,
+        },
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const messageContent = response.choices[0]?.message?.content;
+    if (!messageContent) {
+      throw new Error("No response content received from OpenAI");
+    }
+
+    const analysis = JSON.parse(messageContent);
+
+    return {
+      sentiment: {
+        score: Math.max(1, Math.min(5, analysis.sentiment?.score ?? 3)),
+        label: analysis.sentiment?.label ?? "neutral",
+      },
+      themes: analysis.themes ?? [],
+      insights: analysis.insights ?? "Unable to analyze the entry at this time.",
+      recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
+    };
+  } catch (error) {
+    console.error("Error analyzing sentiment:", error);
+    return {
+      sentiment: { score: 3, label: "neutral" },
+      themes: [],
+      insights: "Unable to analyze the entry at this time.",
+      recommendations: [],
+    };
+  }
+}
+
 export async function generateAffirmation(): Promise<string> {
   try {
     const response = await openai.chat.completions.create({
@@ -76,74 +183,6 @@ export async function generateDailyChallenge(recentEntries: any[], activeGoals: 
   }
 }
 
-export async function analyzeSentiment(content: string): Promise<{
-  sentiment: {
-    score: number;
-    label: string;
-  };
-  themes: string[];
-  insights: string;
-  recommendations: Array<{
-    activity: string;
-    reason: string;
-    duration: string;
-    benefit: string;
-  }>;
-}> {
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are an empathetic AI therapist analyzing journal entries. 
-          Analyze the sentiment, emotional themes, provide personalized insights, and suggest self-care activities.
-          Respond with a JSON object containing:
-          - sentiment: { score (1-5, where 1 is very negative and 5 is very positive), label (descriptive word) }
-          - themes: array of emotional themes present
-          - insights: a brief, personalized insight about the entry
-          - recommendations: array of recommended self-care activities, each containing:
-            - activity: specific activity name
-            - reason: why this activity would be helpful based on the entry
-            - duration: suggested time commitment (e.g. "5 minutes", "30 minutes")
-            - benefit: expected benefit from doing this activity`,
-        },
-        {
-          role: "user",
-          content,
-        },
-      ],
-      response_format: { type: "json_object" },
-    });
-
-    const messageContent = response.choices[0]?.message?.content;
-    if (!messageContent) {
-      throw new Error("No response content received from OpenAI");
-    }
-
-    const analysis = JSON.parse(messageContent);
-
-    return {
-      sentiment: {
-        score: Math.max(1, Math.min(5, analysis.sentiment?.score ?? 3)),
-        label: analysis.sentiment?.label ?? "neutral",
-      },
-      themes: analysis.themes ?? [],
-      insights: analysis.insights ?? "Unable to analyze the entry at this time.",
-      recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
-    };
-  } catch (error) {
-    console.error("Error analyzing sentiment:", error);
-    return {
-      sentiment: { score: 3, label: "neutral" },
-      themes: [],
-      insights: "Unable to analyze the entry at this time.",
-      recommendations: [],
-    };
-  }
-}
-
-// New function for focus motivation chat
 export async function getFocusMotivation(
   message: string,
   context: {
@@ -171,7 +210,7 @@ export async function getFocusMotivation(
           content: `Current Task: ${context.currentTask}
 Session Duration: ${context.sessionDuration} minutes
 Time Elapsed: ${Math.floor(context.elapsedTime / 60)} minutes
-          
+        
 ${message}`,
         },
       ],
