@@ -36,9 +36,6 @@ export default function SelfCareRecommendations({ entry }: SelfCareRecommendatio
                 </p>
                 <p className="mt-2">{rec.reason}</p>
               </div>
-              <Button className="w-full mt-4" variant="secondary">
-                Mark as Complete
-              </Button>
             </CardContent>
           </Card>
         ))}

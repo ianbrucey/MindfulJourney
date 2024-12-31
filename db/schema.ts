@@ -19,6 +19,12 @@ export const entries = pgTable("entries", {
     sentiment: { score: number; label: string };
     themes: string[];
     insights: string;
+    recommendations: Array<{
+      activity: string;
+      reason: string;
+      duration: string;
+      benefit: string;
+    }>;
   }>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
