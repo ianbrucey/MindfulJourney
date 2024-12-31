@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import MoodPicker from "./MoodPicker";
 import VoiceInput from "./VoiceInput";
+import BreathingExercise from "./BreathingExercise";
 import { useJournal } from "@/hooks/use-journal";
 import type { SelectEntry } from "@db/schema";
 import { useLocation } from "wouter";
@@ -28,7 +30,16 @@ interface JournalFormProps {
   entry?: SelectEntry | null;
 }
 
+const journalPrompts = [
+  "What are you grateful for today?",
+  "What made you smile today?",
+  "What's something you learned about yourself?",
+  "What's a challenge you overcame today?",
+  "What's something you're looking forward to?",
+];
+
 export default function JournalForm({ entry }: JournalFormProps) {
+  const [showBreathing, setShowBreathing] = useState(!entry);
   const [, setLocation] = useLocation();
   const { createEntry, updateEntry } = useJournal();
 
@@ -53,6 +64,16 @@ export default function JournalForm({ entry }: JournalFormProps) {
   const handleVoiceTranscript = (transcript: string) => {
     form.setValue("content", transcript, { shouldValidate: true });
   };
+
+  const handleBreathingComplete = () => {
+    setShowBreathing(false);
+    const randomPrompt = journalPrompts[Math.floor(Math.random() * journalPrompts.length)];
+    form.setValue("content", `Today's Prompt: ${randomPrompt}\n\n`, { shouldValidate: false });
+  };
+
+  if (showBreathing) {
+    return <BreathingExercise onComplete={handleBreathingComplete} />;
+  }
 
   return (
     <Form {...form}>
