@@ -4,11 +4,17 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL, ensure the database is provisioned");
 }
 
+const dbUrl = new URL(process.env.DATABASE_URL);
+
 export default defineConfig({
   out: "./migrations",
   schema: "./db/schema.ts",
-  dialect: "mysql",
+  dialect: "mysql2",
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    host: dbUrl.hostname,
+    user: dbUrl.username,
+    password: dbUrl.password,
+    database: dbUrl.pathname.slice(1),
+    port: Number(dbUrl.port),
   },
 });
