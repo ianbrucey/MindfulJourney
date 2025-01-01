@@ -1,29 +1,29 @@
-import { pgTable, text, serial, integer, timestamp, boolean, json, decimal } from "drizzle-orm/pg-core";
+import { mysqlTable, varchar, int, timestamp, boolean, json, decimal } from "drizzle-orm/mysql-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").unique().notNull(),
-  password: text("password").notNull(),
-  email: text("email").unique().notNull(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  stripeCustomerId: text("stripe_customer_id").unique(),
+export const users = mysqlTable("users", {
+  id: int("id").primaryKey().autoincrement(),
+  username: varchar("username", { length: 255 }).unique().notNull(),
+  password: varchar("password", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).unique().notNull(),
+  firstName: varchar("first_name", { length: 255 }).notNull(),
+  lastName: varchar("last_name", { length: 255 }).notNull(),
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }).unique(),
   emailNotifications: boolean("email_notifications").default(false),
-  currentStreak: integer("current_streak").default(0),
-  longestStreak: integer("longest_streak").default(0),
+  currentStreak: int("current_streak").default(0),
+  longestStreak: int("longest_streak").default(0),
   lastEntryDate: timestamp("last_entry_date"),
-  subscriptionTier: text("subscription_tier").default('basic'),
-  aiRequestsCount: integer("ai_requests_count").default(0),
+  subscriptionTier: varchar("subscription_tier", { length: 50 }).default('basic'),
+  aiRequestsCount: int("ai_requests_count").default(0),
   aiRequestsResetDate: timestamp("ai_requests_reset_date"),
 });
 
-export const entries = pgTable("entries", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  content: text("content").notNull(),
-  mood: integer("mood").notNull(),
-  tags: text("tags").array(),
+export const entries = mysqlTable("entries", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull().references(() => users.id),
+  content: varchar("content", { length: 65535 }).notNull(),
+  mood: int("mood").notNull(),
+  tags: json("tags").$type<string[]>(),
   analysis: json("analysis").$type<{
     sentiment: { score: number; label: string };
     themes: string[];
@@ -38,50 +38,50 @@ export const entries = pgTable("entries", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const dailyChallenges = pgTable("daily_challenges", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  challenge: text("challenge").notNull(),
-  category: text("category").notNull(),
-  difficulty: text("difficulty").notNull(),
+export const dailyChallenges = mysqlTable("daily_challenges", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull().references(() => users.id),
+  challenge: varchar("challenge", { length: 1000 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  difficulty: varchar("difficulty", { length: 50 }).notNull(),
   completed: boolean("completed").default(false),
   completedAt: timestamp("completed_at"),
-  reflectionNote: text("reflection_note"),
+  reflectionNote: varchar("reflection_note", { length: 1000 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const affirmations = pgTable("affirmations", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  content: text("content").notNull(),
+export const affirmations = mysqlTable("affirmations", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull().references(() => users.id),
+  content: varchar("content", { length: 1000 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const achievements = pgTable("achievements", {
-  id: serial("id").primaryKey(),
-  name: text("name").unique().notNull(),
-  description: text("description").notNull(),
-  icon: text("icon").notNull(),
-  requirement: text("requirement").notNull(),
-  level: integer("level").default(1),
+export const achievements = mysqlTable("achievements", {
+  id: int("id").primaryKey().autoincrement(),
+  name: varchar("name", { length: 255 }).unique().notNull(),
+  description: varchar("description", { length: 1000 }).notNull(),
+  icon: varchar("icon", { length: 255 }).notNull(),
+  requirement: varchar("requirement", { length: 500 }).notNull(),
+  level: int("level").default(1),
 });
 
-export const userAchievements = pgTable("user_achievements", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  achievementId: integer("achievement_id").notNull().references(() => achievements.id),
+export const userAchievements = mysqlTable("user_achievements", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull().references(() => users.id),
+  achievementId: int("achievement_id").notNull().references(() => achievements.id),
   unlockedAt: timestamp("unlocked_at").defaultNow().notNull(),
 });
 
-export const wellnessGoals = pgTable("wellness_goals", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  title: text("title").notNull(),
-  description: text("description"),
-  category: text("category").notNull(),
-  targetValue: integer("target_value").notNull(),
-  currentValue: integer("current_value").default(0),
-  frequency: text("frequency").notNull(),
+export const wellnessGoals = mysqlTable("wellness_goals", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull().references(() => users.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: varchar("description", { length: 1000 }),
+  category: varchar("category", { length: 100 }).notNull(),
+  targetValue: int("target_value").notNull(),
+  currentValue: int("current_value").default(0),
+  frequency: varchar("frequency", { length: 50 }).notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date"),
   isCompleted: boolean("is_completed").default(false),
@@ -89,75 +89,75 @@ export const wellnessGoals = pgTable("wellness_goals", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const goalProgress = pgTable("goal_progress", {
-  id: serial("id").primaryKey(),
-  goalId: integer("goal_id").notNull().references(() => wellnessGoals.id),
-  value: integer("value").notNull(),
-  note: text("note"),
+export const goalProgress = mysqlTable("goal_progress", {
+  id: int("id").primaryKey().autoincrement(),
+  goalId: int("goal_id").notNull().references(() => wellnessGoals.id),
+  value: int("value").notNull(),
+  note: varchar("note", { length: 1000 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const subscriptionPlans = pgTable("subscription_plans", {
-  id: serial("id").primaryKey(),
-  name: text("name").unique().notNull(),
+export const subscriptionPlans = mysqlTable("subscription_plans", {
+  id: int("id").primaryKey().autoincrement(),
+  name: varchar("name", { length: 255 }).unique().notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  priceId: text("price_id").unique(),
+  priceId: varchar("price_id", { length: 255 }).unique(),
   features: json("features").$type<string[]>(),
-  aiRequestsLimit: integer("ai_requests_limit"),
-  groupLimit: integer("group_limit"),
+  aiRequestsLimit: int("ai_requests_limit"),
+  groupLimit: int("group_limit"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const subscriptions = pgTable("subscriptions", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  planId: integer("plan_id").notNull().references(() => subscriptionPlans.id),
-  stripeSubscriptionId: text("stripe_subscription_id").unique(),
-  status: text("status").notNull(),
+export const subscriptions = mysqlTable("subscriptions", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull().references(() => users.id),
+  planId: int("plan_id").notNull().references(() => subscriptionPlans.id),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }).unique(),
+  status: varchar("status", { length: 50 }).notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date"),
   cancelledAt: timestamp("cancelled_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const supportTopics = pgTable("support_topics", {
-  id: serial("id").primaryKey(),
-  name: text("name").unique().notNull(),
-  description: text("description"),
-  icon: text("icon"),
+export const supportTopics = mysqlTable("support_topics", {
+  id: int("id").primaryKey().autoincrement(),
+  name: varchar("name", { length: 255 }).unique().notNull(),
+  description: varchar("description", { length: 1000 }),
+  icon: varchar("icon", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const supportGroups = pgTable("support_groups", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
-  topicId: integer("topic_id").references(() => supportTopics.id),
+export const supportGroups = mysqlTable("support_groups", {
+  id: int("id").primaryKey().autoincrement(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: varchar("description", { length: 1000 }),
+  topicId: int("topic_id").references(() => supportTopics.id),
   isPrivate: boolean("is_private").default(false),
-  maxMembers: integer("max_members").default(50),
-  inviteCode: text("invite_code").unique(),
+  maxMembers: int("max_members").default(50),
+  inviteCode: varchar("invite_code", { length: 255 }).unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const groupMemberships = pgTable("group_memberships", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  groupId: integer("group_id").notNull().references(() => supportGroups.id),
-  anonymousName: text("anonymous_name").notNull(),
-  role: text("role").notNull().default('member'),
-  permissions: text("permissions").array(),
+export const groupMemberships = mysqlTable("group_memberships", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull().references(() => users.id),
+  groupId: int("group_id").notNull().references(() => supportGroups.id),
+  anonymousName: varchar("anonymous_name", { length: 255 }).notNull(),
+  role: varchar("role", { length: 50 }).notNull().default('member'),
+  permissions: json("permissions").$type<string[]>(),
   isAdmin: boolean("is_admin").default(false),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
   lastActive: timestamp("last_active"),
 });
 
-export const supportMessages = pgTable("support_messages", {
-  id: serial("id").primaryKey(),
-  groupId: integer("group_id").notNull().references(() => supportGroups.id),
-  membershipId: integer("membership_id").notNull().references(() => groupMemberships.id),
-  content: text("content").notNull(),
-  attachmentUrl: text("attachment_url"),
+export const supportMessages = mysqlTable("support_messages", {
+  id: int("id").primaryKey().autoincrement(),
+  groupId: int("group_id").notNull().references(() => supportGroups.id),
+  membershipId: int("membership_id").notNull().references(() => groupMemberships.id),
+  content: varchar("content", { length: 65535 }).notNull(),
+  attachmentUrl: varchar("attachment_url", { length: 1000 }),
   isAnonymous: boolean("is_anonymous").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   editedAt: timestamp("edited_at"),
@@ -167,6 +167,7 @@ export const supportMessages = pgTable("support_messages", {
   }>(),
 });
 
+// Export schemas and types
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = typeof users.$inferInsert;
