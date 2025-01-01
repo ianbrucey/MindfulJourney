@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, int, timestamp, boolean, json, decimal } from "drizzle-orm/mysql-core";
+import { mysqlTable, varchar, int, timestamp, boolean, json, decimal, text } from "drizzle-orm/mysql-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 export const users = mysqlTable("users", {
@@ -21,7 +21,7 @@ export const users = mysqlTable("users", {
 export const entries = mysqlTable("entries", {
   id: int("id").primaryKey().autoincrement(),
   userId: int("user_id").notNull().references(() => users.id),
-  content: varchar("content", { length: 65535 }).notNull(),
+  content: text("content").notNull(),
   mood: int("mood").notNull(),
   tags: json("tags").$type<string[]>(),
   analysis: json("analysis").$type<{
@@ -41,12 +41,12 @@ export const entries = mysqlTable("entries", {
 export const dailyChallenges = mysqlTable("daily_challenges", {
   id: int("id").primaryKey().autoincrement(),
   userId: int("user_id").notNull().references(() => users.id),
-  challenge: varchar("challenge", { length: 1000 }).notNull(),
+  challenge: text("challenge").notNull(),
   category: varchar("category", { length: 100 }).notNull(),
   difficulty: varchar("difficulty", { length: 50 }).notNull(),
   completed: boolean("completed").default(false),
   completedAt: timestamp("completed_at"),
-  reflectionNote: varchar("reflection_note", { length: 1000 }),
+  reflectionNote: text("reflection_note"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -156,7 +156,7 @@ export const supportMessages = mysqlTable("support_messages", {
   id: int("id").primaryKey().autoincrement(),
   groupId: int("group_id").notNull().references(() => supportGroups.id),
   membershipId: int("membership_id").notNull().references(() => groupMemberships.id),
-  content: varchar("content", { length: 65535 }).notNull(),
+  content: text("content").notNull(),
   attachmentUrl: varchar("attachment_url", { length: 1000 }),
   isAnonymous: boolean("is_anonymous").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -167,7 +167,7 @@ export const supportMessages = mysqlTable("support_messages", {
   }>(),
 });
 
-// Export schemas and types
+// Export schemas and types for all tables
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = typeof users.$inferInsert;
