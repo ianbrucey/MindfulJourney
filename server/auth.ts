@@ -131,7 +131,8 @@ export function setupAuth(app: Express) {
 
       const hashedPassword = await crypto.hash(password);
 
-      const [newUser] = await db
+      // Insert new user
+      const result = await db
         .insert(users)
         .values({
           username,
@@ -139,8 +140,14 @@ export function setupAuth(app: Express) {
           email,
           firstName,
           lastName,
-        })
-        .returning();
+        });
+
+      // Get the newly inserted user
+      const [newUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, Number(result.insertId)))
+        .limit(1);
 
       req.login(newUser, (err) => {
         if (err) {
