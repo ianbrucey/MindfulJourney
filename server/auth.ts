@@ -131,7 +131,7 @@ export function setupAuth(app: Express) {
 
       const hashedPassword = await crypto.hash(password);
 
-      // Insert new user
+      // Insert new user and get the result
       const result = await db
         .insert(users)
         .values({
@@ -142,12 +142,21 @@ export function setupAuth(app: Express) {
           lastName,
         });
 
-      // Get the newly inserted user
+      if (!result.insertId || isNaN(result.insertId)) {
+        throw new Error("Failed to create user - invalid insert ID");
+      }
+
+      // Get the newly inserted user with explicit type checking
+      const insertedId = Number(result.insertId);
       const [newUser] = await db
         .select()
         .from(users)
-        .where(eq(users.id, Number(result.insertId)))
+        .where(eq(users.id, insertedId))
         .limit(1);
+
+      if (!newUser) {
+        throw new Error("Failed to fetch newly created user");
+      }
 
       req.login(newUser, (err) => {
         if (err) {
