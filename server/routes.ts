@@ -303,11 +303,18 @@ export function registerRoutes(app: Express): Server {
     }
 
     const analysis = await analyzeSentiment(req.body.content);
-    const [entry] = await db.insert(entries).values({
+    const result = await db.insert(entries).values({
       ...req.body,
       userId: req.user!.id,
       analysis,
-    }).returning();
+    });
+
+    // Get the inserted entry
+    const [entry] = await db
+      .select()
+      .from(entries)
+      .where(eq(entries.id, Number(result.insertId)))
+      .limit(1);
 
     await updateStreakAndCheckAchievements(req.user!.id);
 
@@ -344,10 +351,17 @@ export function registerRoutes(app: Express): Server {
   // Update an entry
   app.put("/api/entries/:id", requireAuth, async (req, res) => {
     const analysis = await analyzeSentiment(req.body.content);
-    const [entry] = await db.update(entries)
+    await db.update(entries)
       .set({ ...req.body, analysis })
+      .where(eq(entries.id, parseInt(req.params.id)));
+
+    // Get the updated entry
+    const [entry] = await db
+      .select()
+      .from(entries)
       .where(eq(entries.id, parseInt(req.params.id)))
-      .returning();
+      .limit(1);
+
     res.json(entry);
   });
 
@@ -364,10 +378,18 @@ export function registerRoutes(app: Express): Server {
 
     if (!todayAffirmation || new Date(todayAffirmation.createdAt) < today) {
       const content = await generateAffirmation();
-      [todayAffirmation] = await db.insert(affirmations).values({
+      await db.insert(affirmations).values({
         content,
         userId: req.user!.id,
-      }).returning();
+      });
+
+      // Get the inserted affirmation
+      const [todayAffirmation] = await db
+        .select()
+        .from(affirmations)
+        .where(eq(affirmations.userId, req.user!.id))
+        .orderBy(desc(affirmations.createdAt))
+        .limit(1);
     }
 
     res.json(todayAffirmation);
@@ -401,18 +423,24 @@ export function registerRoutes(app: Express): Server {
 
   // Create a new wellness goal
   app.post("/api/goals", requireAuth, async (req, res) => {
-    const [goal] = await db.insert(wellnessGoals)
+    const result = await db.insert(wellnessGoals)
       .values({
         ...req.body,
         userId: req.user!.id,
-      })
-      .returning();
+      });
+
+    // Get the inserted goal
+    const [goal] = await db
+      .select()
+      .from(wellnessGoals)
+      .where(eq(wellnessGoals.id, Number(result.insertId)))
+      .limit(1);
     res.json(goal);
   });
 
   // Update a wellness goal
   app.put("/api/goals/:id", requireAuth, async (req, res) => {
-    const [goal] = await db.update(wellnessGoals)
+    await db.update(wellnessGoals)
       .set({
         ...req.body,
         updatedAt: new Date(),
@@ -422,8 +450,12 @@ export function registerRoutes(app: Express): Server {
           eq(wellnessGoals.id, parseInt(req.params.id)),
           eq(wellnessGoals.userId, req.user!.id)
         )
-      )
-      .returning();
+      );
+    const [goal] = await db
+      .select()
+      .from(wellnessGoals)
+      .where(eq(wellnessGoals.id, parseInt(req.params.id)))
+      .limit(1);
     res.json(goal);
   });
 
@@ -444,23 +476,33 @@ export function registerRoutes(app: Express): Server {
     }
 
     // Record the progress
-    const [progress] = await db.insert(goalProgress)
+    const result = await db.insert(goalProgress)
       .values({
         goalId,
         value: req.body.value,
         note: req.body.note,
-      })
-      .returning();
+      });
+
+    const [progress] = await db
+      .select()
+      .from(goalProgress)
+      .where(eq(goalProgress.id, Number(result.insertId)))
+      .limit(1);
 
     // Update the current value in the goal
-    const [updatedGoal] = await db.update(wellnessGoals)
+    await db.update(wellnessGoals)
       .set({
         currentValue: goal.currentValue + req.body.value,
         isCompleted: goal.currentValue + req.body.value >= goal.targetValue,
         updatedAt: new Date(),
       })
+      .where(eq(wellnessGoals.id, goalId));
+
+    const [updatedGoal] = await db
+      .select()
+      .from(wellnessGoals)
       .where(eq(wellnessGoals.id, goalId))
-      .returning();
+      .limit(1);
 
     res.json({ progress, goal: updatedGoal });
   });
@@ -521,12 +563,18 @@ export function registerRoutes(app: Express): Server {
 
         const challenge = await generateDailyChallenge(recentEntries, activeGoals);
 
-        [todayChallenge] = await db.insert(dailyChallenges)
+        const result = await db.insert(dailyChallenges)
           .values({
             userId: req.user!.id,
             ...challenge,
-          })
-          .returning();
+          });
+
+        // Get the inserted challenge
+        const [todayChallenge] = await db
+          .select()
+          .from(dailyChallenges)
+          .where(eq(dailyChallenges.id, Number(result.insertId)))
+          .limit(1);
       }
 
       res.json(todayChallenge);
@@ -538,7 +586,7 @@ export function registerRoutes(app: Express): Server {
 
   // Complete a challenge
   app.post("/api/challenges/:id/complete", requireAuth, async (req, res) => {
-    const [challenge] = await db.update(dailyChallenges)
+    await db.update(dailyChallenges)
       .set({
         completed: true,
         completedAt: new Date(),
@@ -549,8 +597,14 @@ export function registerRoutes(app: Express): Server {
           eq(dailyChallenges.id, parseInt(req.params.id)),
           eq(dailyChallenges.userId, req.user!.id)
         )
-      )
-      .returning();
+      );
+
+    // Get the updated challenge
+    const [challenge] = await db
+      .select()
+      .from(dailyChallenges)
+      .where(eq(dailyChallenges.id, parseInt(req.params.id)))
+      .limit(1);
 
     res.json(challenge);
   });
@@ -642,18 +696,24 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/support-groups", requireAuth, async (req, res) => {
     try {
       // Create the group
-      const [group] = await db.insert(supportGroups)
+      const result = await db.insert(supportGroups)
         .values({
           name: req.body.name,
           description: req.body.description,
           topicId: req.body.topicId,
           isPrivate: req.body.isPrivate,
           maxMembers: req.body.maxMembers,
-        })
-        .returning();
+        });
+
+      // Get the inserted group
+      const [group] = await db
+        .select()
+        .from(supportGroups)
+        .where(eq(supportGroups.id, Number(result.insertId)))
+        .limit(1);
 
       // Create initial membership for the creator
-      const [membership] = await db.insert(groupMemberships)
+      await db.insert(groupMemberships)
         .values({
           userId: req.user!.id,
           groupId: group.id,
@@ -661,8 +721,17 @@ export function registerRoutes(app: Express): Server {
           isAdmin: true,
           role: 'admin',
           permissions: ['manage_members', 'send_messages', 'read_messages', 'moderate_messages']
-        })
-        .returning();
+        });
+
+      // Get the created membership
+      const [membership] = await db
+        .select()
+        .from(groupMemberships)
+        .where(and(
+          eq(groupMemberships.userId, req.user!.id),
+          eq(groupMemberships.groupId, group.id)
+        ))
+        .limit(1);
 
       res.json({ group, membership });
     } catch (error: any) {
@@ -719,7 +788,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Create membership
-      const [membership] = await db.insert(groupMemberships)
+      const result = await db.insert(groupMemberships)
         .values({
           userId: req.user!.id,
           groupId,
@@ -727,8 +796,14 @@ export function registerRoutes(app: Express): Server {
           isAdmin: false,
           role: 'member',
           permissions: ['send_messages', 'read_messages']
-        })
-        .returning();
+        });
+
+      // Get the created membership
+      const [membership] = await db
+        .select()
+        .from(groupMemberships)
+        .where(eq(groupMemberships.id, Number(result.insertId)))
+        .limit(1);
 
       res.json(membership);
     } catch (error: any) {
@@ -757,11 +832,16 @@ export function registerRoutes(app: Express): Server {
       // Generate a unique invite code
       const inviteCode = randomBytes(16).toString('hex');
 
-      // Update the group with the new invite code
-      const [group] = await db.update(supportGroups)
+      await db.update(supportGroups)
         .set({ inviteCode })
+        .where(eq(supportGroups.id, groupId));
+
+      // Get the updated group
+      const [group] = await db
+        .select()
+        .from(supportGroups)
         .where(eq(supportGroups.id, groupId))
-        .returning();
+        .limit(1);
 
       res.json({
         inviteCode: group.inviteCode,
@@ -811,7 +891,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Create membership
-      const [membership] = await db.insert(groupMemberships)
+      const result = await db.insert(groupMemberships)
         .values({
           userId: req.user!.id,
           groupId: group.id,
@@ -819,8 +899,14 @@ export function registerRoutes(app: Express): Server {
           role: 'member',
           permissions: ['send_messages', 'read_messages'],
           isAdmin: false,
-        })
-        .returning();
+        });
+
+      // Get the created membership
+      const [membership] = await db
+        .select()
+        .from(groupMemberships)
+        .where(eq(groupMemberships.id, Number(result.insertId)))
+        .limit(1);
 
       res.json({
         message: "Successfully joined the group",
@@ -851,8 +937,7 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: "Only admins can modify roles" });
       }
 
-      // Update member's role
-      const [updatedMembership] = await db.update(groupMemberships)
+      await db.update(groupMemberships)
         .set({
           role,
           isAdmin: role === 'admin',
@@ -862,8 +947,14 @@ export function registerRoutes(app: Express): Server {
               ? ['send_messages', 'read_messages', 'moderate_messages']
               : ['send_messages', 'read_messages']
         })
+        .where(eq(groupMemberships.id, parseInt(memberId)));
+
+      //// Get the updated membership
+      const [updatedMembership] = await db
+        .select()
+        .from(groupMemberships)
         .where(eq(groupMemberships.id, parseInt(memberId)))
-        .returning();
+        .limit(1);
 
       res.json(updatedMembership);
     } catch (error: any) {
@@ -919,15 +1010,21 @@ export function registerRoutes(app: Express): Server {
       // Analyze sentiment of the message
       const sentiment = await analyzeChatSentiment(req.body.content);
 
-      const [message] = await db.insert(supportMessages)
+      const result = await db.insert(supportMessages)
         .values({
           groupId,
           membershipId: membership.id,
           content: req.body.content,
           isAnonymous: req.body.isAnonymous ?? true,
           sentiment,
-        })
-        .returning();
+        });
+
+      // Get the created message
+      const [message] = await db
+        .select()
+        .from(supportMessages)
+        .where(eq(supportMessages.id, Number(result.insertId)))
+        .limit(1);
 
       res.json(message);
     } catch (error: any) {
